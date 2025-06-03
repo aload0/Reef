@@ -1,13 +1,13 @@
 [versions]
-agp = "8.7.0-alpha09"
+agp = "8.10.1"
 appintro = "3506ab5b2e"
-firebaseBom = "33.2.0"
-kotlin = "2.0.0"
-coreKtx = "1.13.1"
+firebaseBom = "33.14.0"
+kotlin = "2.1.21"
+coreKtx = "1.16.0"
 appcompat = "1.7.0"
 material = "1.12.0"
-activity = "1.9.1"
-playServicesAds = "23.3.0"
+activity = "1.10.1"
+playServicesAds = "24.3.0"
 googleServices = "4.4.2"
 
 [libraries]
