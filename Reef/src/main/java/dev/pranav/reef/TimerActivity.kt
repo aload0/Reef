@@ -7,8 +7,11 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.Window
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
+import com.google.android.material.transition.platform.MaterialSharedAxis
 import dev.pranav.reef.accessibility.FocusModeService
 import dev.pranav.reef.databinding.ActivityTimerBinding
 import dev.pranav.reef.util.AndroidUtilities
@@ -20,10 +23,20 @@ class TimerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityTimerBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        applyDefaults()
-        super.onCreate(savedInstanceState)
+
+        window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
 
         binding = ActivityTimerBinding.inflate(layoutInflater)
+
+        val enter = MaterialSharedAxis(MaterialSharedAxis.X, true).apply {
+            addTarget(binding.root)
+        }
+        window.enterTransition = enter
+
+        window.allowEnterTransitionOverlap = true
+
+        applyDefaults()
+        super.onCreate(savedInstanceState)
 
         applyWindowInsets(binding.root)
 
@@ -85,7 +98,7 @@ class TimerActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(timerReceiver)
-        prefs.edit().putBoolean("focus_mode", false).apply()
+        prefs.edit { putBoolean("focus_mode", false) }
     }
 
     private val timerReceiver = object : BroadcastReceiver() {

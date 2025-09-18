@@ -12,6 +12,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.edit
 import dev.pranav.reef.R
 import dev.pranav.reef.TimerActivity
 import dev.pranav.reef.util.CHANNEL_ID
@@ -90,7 +91,7 @@ class FocusModeService : Service() {
     private fun onComplete() {
         val formattedTime = getFormattedTime(0)
 
-        prefs.edit().putBoolean("focus_mode", false).apply()
+        prefs.edit { putBoolean("focus_mode", false) }
 
         sendTimerUpdateBroadcast(formattedTime)
 
@@ -142,7 +143,7 @@ class FocusModeService : Service() {
         super.onDestroy()
         countDownTimer.cancel()
         notificationManager.cancel(NOTIFICATION_ID)
-        prefs.edit().putBoolean("focus_mode", false).apply()
+        prefs.edit { putBoolean("focus_mode", false) }
     }
 }
 

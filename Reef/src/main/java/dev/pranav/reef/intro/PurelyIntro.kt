@@ -34,7 +34,7 @@ class PurelyIntro : AppIntro2() {
         super.onCreate(savedInstanceState)
 
         // Apply dynamic colors to the entire activity, if available
-        DynamicColors.applyIfAvailable(this)
+        DynamicColors.applyToActivityIfAvailable(this)
 
         isIndicatorEnabled = true
         isWizardMode = true

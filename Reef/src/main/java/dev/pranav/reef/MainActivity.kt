@@ -8,14 +8,14 @@ import android.graphics.drawable.ShapeDrawable
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
 import com.google.android.material.color.MaterialColors
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.shape.MaterialShapes
+import com.google.android.material.transition.platform.MaterialSharedAxis
 import dev.pranav.reef.accessibility.FocusModeService
 import dev.pranav.reef.accessibility.getFormattedTime
 import dev.pranav.reef.databinding.ActivityMainBinding
 import dev.pranav.reef.intro.PurelyIntro
-import dev.pranav.reef.util.AppLimits
 import dev.pranav.reef.util.Whitelist
 import dev.pranav.reef.util.applyDefaults
 import dev.pranav.reef.util.isAccessibilityServiceEnabledForBlocker
@@ -29,9 +29,15 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         applyDefaults()
-        super.onCreate(savedInstanceState)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
+
+        val exit = MaterialSharedAxis(MaterialSharedAxis.X, true).apply {
+            addTarget(binding.root)
+        }
+        window.exitTransition = exit
+        window.sharedElementsUseOverlay = false
+
+        super.onCreate(savedInstanceState)
 
         setContentView(binding.root)
 
@@ -42,14 +48,13 @@ class MainActivity : AppCompatActivity() {
         val containerColor = ColorStateList.valueOf(
             MaterialColors.getColor(
                 this,
-                com.google.android.material.R.attr.colorPrimaryContainer,
+                com.google.android.material.R.attr.colorTertiary,
                 "Error: no colorPrimaryFixed color found"
             )
         )
         shapeDrawable.setTintList(containerColor)
         binding.startFocusMode.background = shapeDrawable
 
-        // 2. Create a RippleDrawable that uses the same shape as its mask
         val rippleColor = ColorStateList.valueOf(
             MaterialColors.getColor(
                 this,
@@ -61,7 +66,6 @@ class MainActivity : AppCompatActivity() {
         binding.startFocusMode.foreground = rippleDrawable
 
         addExceptions()
-        AppLimits.loadLimits(this)
 
         if (prefs.getBoolean("first_run", true)) {
             startActivity(Intent(this, PurelyIntro::class.java))
@@ -72,35 +76,45 @@ class MainActivity : AppCompatActivity() {
                     putExtra("left", getFormattedTime(prefs.getLong("focus_time", 10 * 60 * 1000)))
                 })
             } else {
-                prefs.edit().putBoolean("focus_mode", false).apply()
+                prefs.edit { putBoolean("focus_mode", false) }
             }
         }
 
         binding.startFocusMode.setOnClickListener {
-            MaterialAlertDialogBuilder(this)
-                .setTitle(getString(R.string.focus_mode))
-                .setMessage(getString(R.string.focus_mode_description))
-                .setPositiveButton(getString(R.string.common_continue)) { _, _ ->
-                    if (isAccessibilityServiceEnabledForBlocker()) {
-                        startActivity(Intent(this, TimerActivity::class.java))
-                    } else {
-                        pendingFocusModeStart = true
-                        showAccessibilityDialog()
-                    }
-                }
-                .setNegativeButton(getString(android.R.string.cancel), null)
-                .show()
+            if (isAccessibilityServiceEnabledForBlocker()) {
+                startActivity(Intent(this, TimerActivity::class.java))
+            } else {
+                pendingFocusModeStart = true
+                showAccessibilityDialog()
+            }
         }
+
+//            MaterialAlertDialogBuilder(this)
+//                .setTitle(getString(R.string.focus_mode))
+//                .setMessage(getString(R.string.focus_mode_description))
+//                .setPositiveButton(getString(R.string.common_continue)) { _, _ ->
+//                    if (isAccessibilityServiceEnabledForBlocker()) {
+//                        startActivity(Intent(this, TimerActivity::class.java))
+//                    } else {
+//                        pendingFocusModeStart = true
+//                        showAccessibilityDialog()
+//                    }
+//                }
+//                .setNegativeButton(getString(android.R.string.cancel), null)
+//                .show()
 
         binding.appUsage.setOnClickListener {
             startActivity(Intent(this, AppUsageActivity::class.java))
+        }
+
+        binding.routines.setOnClickListener {
+            startActivity(Intent(this, RoutinesActivity::class.java))
         }
 
         binding.whitelistApps.setOnClickListener {
             startActivity(Intent(this, WhitelistActivity::class.java))
         }
     }
-
 
     override fun onResume() {
         super.onResume()

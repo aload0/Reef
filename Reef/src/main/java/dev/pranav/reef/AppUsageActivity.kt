@@ -1,6 +1,5 @@
 package dev.pranav.reef
 
-import android.annotation.SuppressLint
 import android.app.usage.UsageStatsManager
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -8,149 +7,162 @@ import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Process
+import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DividerItemDecoration
-import androidx.recyclerview.widget.OrientationHelper
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.transition.platform.MaterialSharedAxis
 import dev.pranav.reef.databinding.ActivityUsageBinding
 import dev.pranav.reef.databinding.AppUsageItemBinding
 import dev.pranav.reef.util.AppLimits
 import dev.pranav.reef.util.applyDefaults
+import dev.pranav.reef.util.applyWindowInsets
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+data class Stats(val applicationInfo: ApplicationInfo, val usageStats: AppLimits.AppUsageStats)
 
 class AppUsageActivity : AppCompatActivity() {
     private lateinit var binding: ActivityUsageBinding
+    private val adapter by lazy { AppUsageAdapter(packageManager) { stats -> onAppItemClicked(stats) } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         applyDefaults()
-        super.onCreate(savedInstanceState)
 
+        window.enterTransition = MaterialSharedAxis(MaterialSharedAxis.Z, true)
+        window.returnTransition = MaterialSharedAxis(MaterialSharedAxis.Z, false)
+
+        super.onCreate(savedInstanceState)
         binding = ActivityUsageBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        applyWindowInsets(binding.rootLayout)
 
         binding.toolbar.setNavigationOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-
-        val appUsageStats = AppLimits.getUsageStats(getSystemService(USAGE_STATS_SERVICE) as UsageStatsManager)
-
-        val launcherApps = getSystemService(LAUNCHER_APPS_SERVICE) as LauncherApps
-
-        val filteredAppUsageStats =
-            appUsageStats.asSequence()
-                .takeWhile { it.totalTimeInForeground > 5 * 1000 }.map { stats ->
-                    Stats(
-                        launcherApps.getApplicationInfo(
-                            stats.packageName, 0, Process.myUserHandle()
-                        ), stats
-                    )
-                }.toList()
-
-        val adapter = AppUsageAdapter(filteredAppUsageStats)
-        binding.appUsageRecyclerView.apply {
-            addItemDecoration(
-                DividerItemDecoration(
-                    context, OrientationHelper.VERTICAL
-                )
-            )
-            this.adapter = adapter
-        }
+        setupRecyclerView()
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     override fun onResume() {
         super.onResume()
+        loadUsageStats()
+    }
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            val appUsageStats =
-                AppLimits.getUsageStats(getSystemService(USAGE_STATS_SERVICE) as UsageStatsManager)
+    private fun setupRecyclerView() {
+        binding.appUsageRecyclerView.adapter = adapter
+    }
 
+    private fun loadUsageStats() {
+        // Use coroutines to fetch data off the main thread
+        GlobalScope.launch(Dispatchers.IO) {
+            val usageStatsManager = getSystemService(USAGE_STATS_SERVICE) as UsageStatsManager
             val launcherApps = getSystemService(LAUNCHER_APPS_SERVICE) as LauncherApps
+            val appUsageStats = AppLimits.getUsageStats(usageStatsManager)
 
-            val filteredAppUsageStats =
-                appUsageStats.asSequence()
-                    .takeWhile { it.totalTimeInForeground > 5 * 1000 }.map { stats ->
-                        val applicationInfo = launcherApps.getApplicationInfo(
-                            stats.packageName, 0, Process.myUserHandle()
-                        )
-                        Stats(applicationInfo, stats)
-                    }.toList()
+            val maxUsage = appUsageStats.firstOrNull()?.totalTimeInForeground ?: 1L
 
-            launch(Dispatchers.Main) {
-                val adapter = binding.appUsageRecyclerView.adapter as AppUsageAdapter
-                adapter.updateData(filteredAppUsageStats)
+            val filteredAppUsageStats = appUsageStats
+                .asSequence()
+                .filter { it.totalTimeInForeground > 5 * 1000 }
+                .mapNotNull { stats ->
+                    // Use mapNotNull to safely handle cases where app info might be null
+                    launcherApps.getApplicationInfo(stats.packageName, 0, Process.myUserHandle())
+                        ?.let { appInfo -> Stats(appInfo, stats) }
+                }
+                .toList()
+
+            withContext(Dispatchers.Main) {
+                adapter.setMaxUsage(maxUsage) // Pass the max usage for the progress bar
+                adapter.submitList(filteredAppUsageStats)
             }
         }
     }
 
-    inner class AppUsageViewHolder(private val binding: AppUsageItemBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-        fun bind(stats: Stats, packageManager: PackageManager) {
-            binding.appIcon.setImageDrawable(stats.applicationInfo.loadIcon(packageManager))
-            binding.appName.text = stats.applicationInfo.loadLabel(packageManager)
-            binding.appUsage.text = formatTime(stats.usageStats.totalTimeInForeground)
-
-            binding.root.setOnClickListener {
-                if (stats.applicationInfo.packageName == packageName) {
-                    Snackbar.make(
-                        binding.root, "Cannot set limit for Reef", Snackbar.LENGTH_SHORT
-                    ).show()
-                    return@setOnClickListener
-                }
-                val intent = Intent(
-                    this@AppUsageActivity, ApplicationDailyLimitActivity::class.java
-                ).apply {
-                    putExtra("package_name", stats.applicationInfo.packageName)
-                }
-                startActivity(intent)
-            }
+    private fun onAppItemClicked(stats: Stats) {
+        if (stats.applicationInfo.packageName == packageName) {
+            Snackbar.make(binding.root, "Cannot set limit for Reef", Snackbar.LENGTH_SHORT).show()
+            return
         }
+        val intent = Intent(this, ApplicationDailyLimitActivity::class.java).apply {
+            putExtra("package_name", stats.applicationInfo.packageName)
+        }
+        startActivity(intent)
+    }
+}
+
+class AppUsageAdapter(
+    private val packageManager: PackageManager,
+    private val onClick: (Stats) -> Unit
+) :
+    ListAdapter<Stats, AppUsageViewHolder>(StatsDiffCallback()) {
+
+    private var maxUsage: Long = 1L
+
+    fun setMaxUsage(max: Long) {
+        maxUsage = if (max > 0) max else 1L
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppUsageViewHolder {
+        val binding =
+            AppUsageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return AppUsageViewHolder(binding, onClick)
+    }
+
+    override fun onBindViewHolder(holder: AppUsageViewHolder, position: Int) {
+        holder.bind(getItem(position), packageManager, maxUsage)
+    }
+}
+
+class AppUsageViewHolder(
+    private val binding: AppUsageItemBinding,
+    private val onClick: (Stats) -> Unit
+) : RecyclerView.ViewHolder(binding.root) {
+
+    private var currentStat: Stats? = null
+
+    init {
+        binding.root.setOnClickListener {
+            currentStat?.let { onClick(it) }
+        }
+    }
+
+    fun bind(stats: Stats, packageManager: PackageManager, maxUsage: Long) {
+        currentStat = stats
+        binding.appIcon.setImageDrawable(stats.applicationInfo.loadIcon(packageManager))
+        binding.appName.text = stats.applicationInfo.loadLabel(packageManager)
+        binding.appUsage.text = formatTime(stats.usageStats.totalTimeInForeground)
+
+        // Update the progress indicator
+        val progress = (stats.usageStats.totalTimeInForeground * 100 / maxUsage).toInt()
+        binding.usageProgressIndicator.progress = progress
     }
 
     private fun formatTime(timeInMillis: Long): String {
-        val hours = timeInMillis / (1000 * 60 * 60)
-        val minutes = (timeInMillis % (1000 * 60 * 60)) / (1000 * 60)
-        val seconds = (timeInMillis % (1000 * 60)) / 1000
+        val hours = timeInMillis / 3_600_000
+        val minutes = (timeInMillis % 3_600_000) / 60_000
 
         return when {
-            hours > 0 -> "$hours hr" + (if (minutes > 0) " $minutes mins" else "") + (if (seconds > 0) " $seconds secs" else "")
-            minutes > 0 -> "$minutes mins" + (if (seconds > 0) " $seconds secs" else "")
-            else -> "$seconds secs"
+            hours > 0 -> "${hours}h ${minutes}m"
+            minutes > 0 -> "${minutes}m"
+            else -> "< 1m"
         }
     }
+}
 
-    data class Stats(val applicationInfo: ApplicationInfo, val usageStats: AppLimits.AppUsageStats)
+class StatsDiffCallback : DiffUtil.ItemCallback<Stats>() {
+    override fun areItemsTheSame(oldItem: Stats, newItem: Stats): Boolean {
+        return oldItem.applicationInfo.packageName == newItem.applicationInfo.packageName
+    }
 
-    inner class AppUsageAdapter(private var appUsageStats: List<Stats>) :
-        RecyclerView.Adapter<AppUsageViewHolder>() {
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppUsageViewHolder {
-            val binding = AppUsageItemBinding.inflate(layoutInflater, parent, false)
-            return AppUsageViewHolder(binding)
-        }
-
-        override fun onBindViewHolder(holder: AppUsageViewHolder, position: Int) {
-            holder.bind(appUsageStats[position], packageManager)
-        }
-
-        @SuppressLint("NotifyDataSetChanged")
-        fun updateData(newAppUsageStats: List<Stats>) {
-            appUsageStats = newAppUsageStats
-            notifyDataSetChanged()
-        }
-
-        override fun getItemCount(): Int = appUsageStats.size
+    override fun areContentsTheSame(oldItem: Stats, newItem: Stats): Boolean {
+        // You might want a more thorough check here if usageStats can change meaningfully
+        return oldItem == newItem
     }
 }

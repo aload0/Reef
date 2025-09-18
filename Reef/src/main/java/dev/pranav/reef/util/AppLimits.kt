@@ -4,6 +4,7 @@ import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -15,11 +16,12 @@ object AppLimits {
     private lateinit var usageStatsManager: UsageStatsManager
 
     fun setLimit(packageName: String, limit: Int) {
+        // limit is in minutes, convert to milliseconds
         appLimits[packageName] = limit * 60 * 1000L
     }
 
     fun getLimit(packageName: String): Long {
-        return appLimits[packageName]!!
+        return appLimits[packageName] ?: 0L
     }
 
     fun removeLimit(packageName: String) {
@@ -37,8 +39,10 @@ object AppLimits {
     fun hasLimit(packageName: String): Boolean {
         return appLimits.containsKey(packageName)
     }
+
     fun getUsageTime(packageName: String, usageStatsManager: UsageStatsManager): Long {
-        return getUsageStats(usageStatsManager).find { it.packageName == packageName }?.totalTimeInForeground ?: 0L
+        return getUsageStats(usageStatsManager).find { it.packageName == packageName }?.totalTimeInForeground
+            ?: 0L
     }
 
     fun getRawUsageStats(usageStatsManager: UsageStatsManager): List<UsageStats> {
@@ -110,6 +114,57 @@ object Whitelist {
         if (sharedPreferences.all.isEmpty()) {
             whitelistAll(allowedApps)
         }
+
+        // Whitelist all installed input methods (keyboards)
+        val inputMethodManager =
+            context.getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        val inputMethods = inputMethodManager.enabledInputMethodList
+        inputMethods.forEach { imi ->
+            whitelist(imi.packageName)
+        }
+
+        // Whitelist the default SMS app
+        val defaultSmsPackage = android.provider.Telephony.Sms.getDefaultSmsPackage(context)
+        if (defaultSmsPackage != null) {
+            whitelist(defaultSmsPackage)
+        }
+
+        // Whitelist the default Phone app
+        val telecomManager =
+            context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+        val defaultPhonePackage = telecomManager.defaultDialerPackage
+        if (defaultPhonePackage != null) {
+            whitelist(defaultPhonePackage)
+        }
+
+        // Whitelist the default assistant app
+        val intentAssist = android.content.Intent(android.content.Intent.ACTION_ASSIST).apply {
+            addCategory(android.content.Intent.CATEGORY_DEFAULT)
+        }
+        val resolveInfoAssist = context.packageManager.resolveActivity(intentAssist, 0)
+        val defaultAssistPackage = resolveInfoAssist?.activityInfo?.packageName
+        if (defaultAssistPackage != null) {
+            whitelist(defaultAssistPackage)
+        }
+
+        // Whitelist the default launcher
+        val intent = android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
+            addCategory(android.content.Intent.CATEGORY_HOME)
+            addCategory(android.content.Intent.CATEGORY_DEFAULT)
+        }
+        val resolveInfo = context.packageManager.resolveActivity(intent, 0)
+        val defaultLauncherPackage = resolveInfo?.activityInfo?.packageName
+        if (defaultLauncherPackage != null) {
+            whitelist(defaultLauncherPackage)
+        }
+
+        // Whitelist apps with SYSTEM_ALERT_WINDOW permission
+        context.packageManager.getPackagesHoldingPermissions(
+            arrayOf(android.Manifest.permission.SYSTEM_ALERT_WINDOW),
+            0
+        ).forEach { pkg ->
+            whitelist(pkg.packageName)
+        }
     }
 
     fun isWhitelisted(packageName: String): Boolean {
@@ -117,7 +172,7 @@ object Whitelist {
     }
 
     fun whitelist(packageName: String) {
-        sharedPreferences.edit().putBoolean(packageName, true).apply()
+        sharedPreferences.edit { putBoolean(packageName, true) }
     }
 
     fun whitelistAll(set: Set<String>) {
@@ -125,7 +180,7 @@ object Whitelist {
     }
 
     fun unwhitelist(packageName: String) {
-        sharedPreferences.edit().putBoolean(packageName, false).apply()
+        sharedPreferences.edit { putBoolean(packageName, false) }
     }
 
     fun load(context: Context) {
@@ -137,15 +192,10 @@ object Whitelist {
         "com.android.settings",
         "dev.pranav.reef",
         "com.android.calculator2",
-        "com.android.dialer",
-        "com.android.contacts",
         "com.android.mms",
         "com.android.phone",
         "com.android.camera",
         "com.android.camera2",
-        "com.google.android.dialer",
-        "com.google.android.contacts",
-        "com.google.android.apps.messaging",
         "com.google.android.deskclock",
         "com.google.android.calendar",
         "com.google.android.keep",
@@ -170,7 +220,6 @@ object Whitelist {
 
         "net.osmand",
         "com.fsck.k9",
-        "com.google.android.inputmethod.latin",
         "com.google.android.apps.wellbeing",
         "com.android.documentsui",
         "bin.mt.plus.canary",
@@ -178,31 +227,18 @@ object Whitelist {
         "com.lineageos.aperture.dev",
         "com.lineageos.aperture",
         "com.shazam.android",
-        "dev.patrickgold.florisboard",
-        "dev.patrickgold.florisboard.debug",
         "com.synapsetech.compass",
         "hr.dtekac.prognoza",
         "me.jmh.authenticatorpro",
-
-        "com.google.android.apps.nexuslauncher",
-        "com.microsoft.launcher",
-        "net.oneplus.launcher",
-        "com.samsung.android.app.launcher",
-        "com.android.launcher3",
-        "app.lawnchair",
-        "app.lawnchair.debug",
 
         "com.microsoft.office.officehubrow",
         "com.slack",
         "com.google.android.gm",
         "com.google.android.apps.meet",
         "com.microsoft.teams",
-        "com.figma.mirror",
         "com.paypal.android.p2pmobile",
         "com.google.android.apps.chromecast.app",
-        "com.linkedin.android",
-        "com.adobe.lightroom",
         "com.google.android.apps.nbu.paisa.user",
-        "com.whatsapp",
+        "com.whatsapp"
     )
 }

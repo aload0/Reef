@@ -19,19 +19,22 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/start"
-        style="@style/Widget.Material3.Button.TonalButton"
+        style="@style/Widget.Material3Expressive.Button.TonalButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="20dp"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium.Emphasized"
         android:text="@string/start_focus_mode" />
 
     <TextView
         android:id="@+id/timer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/karla_regular"
-        android:textAppearance="@style/TextAppearance.Material3.DisplayLarge"
+        android:fontFamily="sans-serif-medium"
+        android:textAppearance="@style/TextAppearance.Material3.DisplayLarge.Emphasized"
         android:visibility="gone"
+        android:textFontWeight="600"
+        tools:targetApi="28"
         tools:text="12:00" />
 
 </LinearLayout>

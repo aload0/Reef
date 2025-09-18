@@ -1,32 +1,35 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?colorSurfaceContainer"
     android:gravity="center"
-    android:background="?attr/colorSurface"
     android:orientation="vertical">
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/start_focus_mode"
         android:layout_width="200dp"
         android:layout_height="200dp"
-        android:backgroundTint="?attr/colorPrimaryContainer"
+        android:backgroundTint="?colorPrimaryContainer"
         android:clickable="true"
         android:contentDescription="@string/start_focus_mode"
         android:focusable="true"
         android:src="@drawable/round_play_arrow_24"
         app:contentPadding="32dp"
-        app:tint="?attr/colorSecondary" />
+        app:tint="?colorPrimary" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:fontFamily="@font/karla_regular"
+        android:fontFamily="sans-serif"
+        android:letterSpacing="0.03"
         android:text="@string/focus_mode"
-        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-        android:textSize="24sp" />
+        android:textAppearance="@style/TextAppearance.Material3.DisplaySmall.Emphasized"
+        android:textColor="?colorOnSurface"
+        android:textFontWeight="600"
+        tools:ignore="UnusedAttribute" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -34,35 +37,52 @@
         android:layout_marginTop="24dp"
         android:orientation="vertical">
 
-        <TextView
+
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/app_usage"
             android:layout_width="match_parent"
             android:layout_height="?listPreferredItemHeightLarge"
-            android:alpha="0.9"
-            android:clickable="true"
-            android:fontFamily="@font/karla_regular"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center_vertical"
-            android:paddingVertical="12dp"
-            android:paddingHorizontal="14dp"
+            android:background="?selectableItemBackground"
             android:text="@string/app_usage"
+            android:drawablePadding="12dp"
             android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+            android:paddingHorizontal="16dp"
+            app:drawableStartCompat="@drawable/rounded_bar_chart_24"
+            app:drawableTint="?colorTertiary"
             app:drawableEndCompat="@drawable/baseline_arrow_forward_ios_24" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/routines"
+            android:layout_width="match_parent"
+            android:layout_height="?listPreferredItemHeightLarge"
+            android:background="?selectableItemBackground"
+            android:clickable="true"
+            android:drawablePadding="12dp"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:text="@string/routines"
+            android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+            app:drawableEndCompat="@drawable/baseline_arrow_forward_ios_24"
+            app:drawableStartCompat="@drawable/round_schedule_24"
+            app:drawableTint="?colorTertiary" />
+
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/whitelist_apps"
             android:layout_width="match_parent"
             android:layout_height="?listPreferredItemHeightLarge"
-            android:alpha="0.9"
             android:clickable="true"
-            android:fontFamily="@font/karla_regular"
-            android:foreground="?attr/selectableItemBackground"
+            android:background="?selectableItemBackground"
             android:gravity="center_vertical"
-            android:paddingVertical="12dp"
-            android:paddingHorizontal="14dp"
+            android:drawablePadding="12dp"
+            android:focusable="true"
             android:text="@string/whitelist_apps"
             android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+            android:paddingHorizontal="16dp"
+            app:drawableStartCompat="@drawable/rounded_verified_24"
+            app:drawableTint="?colorTertiary"
             app:drawableEndCompat="@drawable/baseline_arrow_forward_ios_24" />
     </LinearLayout>
-</LinearLayout>
 
+</LinearLayout>

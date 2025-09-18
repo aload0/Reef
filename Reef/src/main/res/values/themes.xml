@@ -2,5 +2,6 @@
 <resources>
 
     <style name="Theme.Reef" parent="Theme.Material3Expressive.DynamicColors.DayNight.NoActionBar">
+        <item name="android:windowActivityTransitions">true</item>
     </style>
 </resources>
