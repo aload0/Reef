@@ -1,0 +1,12 @@
+* Add Routines feature to automatically enable/disable profiles based on time and day
+* Improve performance
+* Redesign user interface to Material You Expressive for a modern feel
+* Fix bug causing app to not detect accessibility permission on some devices
+* Automatically whitelist default apps to prevent interference
+* Whitelist apps with overlays to avoid conflicts
+* Add transitions and animations for smoother navigation
+
+---
+
+Thank you for choosing Reef. We welcome your feedback and suggestions
+through GitHub issues!
