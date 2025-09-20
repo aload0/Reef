@@ -75,11 +75,9 @@ If Reef has helped you, consider supporting its development. Your contribution h
 building more useful and innovative features.
 
 <br>
-<img src="upi.jpeg" alt="Donate with UPI" height="260" />
+<img src="upi.jpeg" alt="Donate with UPI" height="200" />
 
 <br>
-
-UPI ID: **pranavpurwar@fam**
 
 ---
 
