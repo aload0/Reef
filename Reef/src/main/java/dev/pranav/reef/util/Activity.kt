@@ -2,8 +2,8 @@ package dev.pranav.reef.util
 
 import android.app.Activity
 import android.view.View
+import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -23,7 +23,7 @@ fun applyWindowInsets(root: View) {
     }
 }
 
-fun AppCompatActivity.applyDefaults() {
+fun ComponentActivity.applyDefaults() {
     setDarkStatusBar()
     enableEdgeToEdge()
 }

@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -12,13 +13,20 @@ android {
         applicationId = "dev.pranav.reef"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.2.1"
+        versionCode = 9
+        versionName = "2.0.0"
     }
 
     viewBinding.enable = true
 
-    buildFeatures.buildConfig = true
+    buildFeatures {
+        buildConfig = true
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.15"
+    }
 
     buildTypes {
         release {
@@ -43,6 +51,9 @@ android {
         // Disables dependency metadata when building Android App Bundles (for Google Play)
         includeInBundle = false
     }
+    buildToolsVersion = "36.1.0"
+    ndkVersion = "29.0.14033849 rc4"
+    compileSdkMinor = 1
 }
 
 dependencies {
@@ -53,4 +64,17 @@ dependencies {
     implementation(libs.gson)
 
     implementation(libs.appintro)
+
+    // Compose BOM
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.compose.material.icons.extended)
+
+    implementation(libs.vico.compose.m3)
 }
