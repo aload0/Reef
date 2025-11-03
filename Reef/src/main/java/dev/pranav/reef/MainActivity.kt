@@ -20,6 +20,7 @@ import dev.pranav.reef.databinding.ActivityMainBinding
 import dev.pranav.reef.intro.PurelyIntro
 import dev.pranav.reef.util.Whitelist
 import dev.pranav.reef.util.applyDefaults
+import dev.pranav.reef.util.checkAndRequestMissingPermissions
 import dev.pranav.reef.util.isAccessibilityServiceEnabledForBlocker
 import dev.pranav.reef.util.prefs
 import dev.pranav.reef.util.showAccessibilityDialog
@@ -27,6 +28,7 @@ import dev.pranav.reef.util.showAccessibilityDialog
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var pendingFocusModeStart = false
+    private var hasCheckedPermissions = false
 
     @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,6 +118,11 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
+        if (!hasCheckedPermissions && !prefs.getBoolean("first_run", true)) {
+            hasCheckedPermissions = true
+            checkAndRequestMissingPermissions()
+        }
+
         if (pendingFocusModeStart && isAccessibilityServiceEnabledForBlocker()) {
             pendingFocusModeStart = false
             startActivity(Intent(this, TimerActivity::class.java))
@@ -130,7 +137,15 @@ class MainActivity : AppCompatActivity() {
         ) {
             MaterialAlertDialogBuilder(this)
                 .setTitle("Enjoying Reef?")
-                .setMessage("Reef is built and maintained by an independent developer in their free time. Your support helps keep this project alive and improving.\n\nConsider supporting if you find it valuable.")
+                .setMessage(
+                    """
+                        I'm a student who maintains Reef in my personal time, and your support is the only way to sustain continuous improvements.
+                        
+                        Your support of any amount helps keep this project alive and improving.
+                        
+                        If Reef helps you, please consider supporting its future.
+                    """.trimIndent()
+                )
                 .setPositiveButton("Support") { _, _ ->
                     val intent = Intent(
                         Intent.ACTION_VIEW,

@@ -187,7 +187,7 @@ class FocusModeService : Service() {
 
             notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentIntent(pendingIntent)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setDefaults(NotificationCompat.DEFAULT_ALL)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_DEFAULT)

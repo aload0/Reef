@@ -78,6 +78,10 @@
             android:name=".AboutActivity"
             android:label="About" />
 
+        <activity
+            android:name=".PermissionsCheckActivity"
+            android:label="Permissions" />
+
         <service
             android:name=".accessibility.BlockerService"
             android:exported="false"

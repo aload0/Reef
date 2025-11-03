@@ -211,11 +211,7 @@ class PurelyIntro : AppIntro2() {
                         }
                     },
                     isTaskCompleted = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            (getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager).canScheduleExactAlarms()
-                        } else {
-                            true
-                        }
+                        (getSystemService(ALARM_SERVICE) as android.app.AlarmManager).canScheduleExactAlarms()
                     }
                 )
             )
