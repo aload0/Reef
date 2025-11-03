@@ -115,7 +115,7 @@
         </receiver>
 
         <receiver
-            android:name=".util.RoutineActivationReceiver"
+            android:name=".routine.RoutineActivationReceiver"
             android:exported="false" />
 
     </application>

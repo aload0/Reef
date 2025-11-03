@@ -1,0 +1,4 @@
+More accurate usage stats
+Fix wrong routine blocks (#20)
+Improve limits mechanism
+Adaptive Themed Icon
