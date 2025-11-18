@@ -24,7 +24,7 @@
     <string name="battery_optimization_exception">Exception à l\'optimisation de batterie</string>
     <string name="battery_optimization_exception_description">Merci d\'autoriser l\'Exception à l\'optimisation de batterie pour continuer.</string>
     <string name="exact_alarm_permission">Programmer des alarmes précises</string>
-    <string name="exact_alarm_permission_description">Autorisez Reef à programmer des alarmes précises pour les routines. Cela garantit que vos routines de blocage d'applications démarrent et s'arrêtent exactement aux heures que vous avez définies.</string>
+    <string name="exact_alarm_permission_description">Autorisez Reef à programmer des alarmes précises pour les routines. Cela garantit que vos routines de blocage d\'applications démarrent et s\'arrêtent exactement aux heures que vous avez définies.</string>
     <string name="hard_mode">Mode Difficile</string>
     <string name="intermediate_mode">Mode Intermédiaire</string>
     <string name="east_mode">Mode Est</string>
