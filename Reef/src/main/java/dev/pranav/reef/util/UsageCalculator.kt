@@ -1,54 +1,40 @@
 package dev.pranav.reef.util
 
-import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
+import android.content.Context
+import java.util.Calendar
 
 object UsageCalculator {
 
     fun calculateUsage(
+        context: Context,
         usm: UsageStatsManager,
         startTime: Long,
         endTime: Long,
         targetPackage: String? = null
     ): Map<String, Long> {
-        val result = mutableMapOf<String, Long>()
-        val lastResumeTime = mutableMapOf<String, Long>()
+        return ScreenUsageHelper.fetchUsageInMs(usm, startTime, endTime, targetPackage)
+    }
 
-        val events = usm.queryEvents(startTime, endTime)
-        val event = UsageEvents.Event()
-
-        while (events.hasNextEvent()) {
-            events.getNextEvent(event)
-
-            if (targetPackage != null && event.packageName != targetPackage) continue
-
-            when (event.eventType) {
-                UsageEvents.Event.ACTIVITY_RESUMED -> {
-                    lastResumeTime[event.packageName] = event.timeStamp.coerceAtLeast(startTime)
-                }
-
-                UsageEvents.Event.ACTIVITY_PAUSED, UsageEvents.Event.ACTIVITY_STOPPED -> {
-                    val resumeTime = lastResumeTime.remove(event.packageName)
-                    if (resumeTime != null) {
-                        val duration = event.timeStamp.coerceAtMost(endTime) - resumeTime
-                        if (duration > 0) {
-                            result[event.packageName] =
-                                result.getOrDefault(event.packageName, 0L) + duration
-                        }
-                    }
-                }
-            }
-        }
-
+    fun getDailyUsage(usm: UsageStatsManager, packageName: String): Long {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val startOfDay = cal.timeInMillis
         val now = System.currentTimeMillis()
-        for ((pkg, resumeTime) in lastResumeTime) {
-            val effectiveEnd = minOf(endTime, now)
-            val duration = effectiveEnd - resumeTime
-            if (duration > 0) {
-                result[pkg] = result.getOrDefault(pkg, 0L) + duration
-            }
-        }
 
-        return result
+        return ScreenUsageHelper.fetchUsageInMs(usm, startOfDay, now, packageName)[packageName]
+            ?: 0L
+    }
+
+    fun getTodayUsageMap(usm: UsageStatsManager): Map<String, Long> {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        return ScreenUsageHelper.fetchUsageInMs(usm, cal.timeInMillis, System.currentTimeMillis())
     }
 }

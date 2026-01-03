@@ -1,15 +1,5 @@
-package dev.pranav.reef
+package dev.pranav.reef.timer
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.os.Build
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -36,11 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.edit
-import dev.pranav.reef.accessibility.FocusModeService
-import dev.pranav.reef.timer.TimerStateManager
-import dev.pranav.reef.ui.ReefTheme
-import dev.pranav.reef.util.AndroidUtilities
+import dev.pranav.reef.R
 import dev.pranav.reef.util.prefs
 
 sealed interface TimerConfig {
@@ -54,160 +40,8 @@ sealed interface TimerConfig {
     ): TimerConfig
 }
 
-class TimerActivity: ComponentActivity() {
-
-    private val timerReceiver = object: BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val left = intent.getStringExtra(FocusModeService.EXTRA_TIME_LEFT) ?: "00:00"
-            currentTimeLeft = left
-            currentTimerState = intent.getStringExtra(FocusModeService.EXTRA_TIMER_STATE) ?: "FOCUS"
-
-            if (left == "00:00" && !prefs.getBoolean("pomodoro_mode", false)) {
-                val androidUtilities = AndroidUtilities()
-                androidUtilities.vibrate(context, 500)
-            }
-        }
-    }
-
-    private var currentTimeLeft by mutableStateOf("00:00")
-    private var currentTimerState by mutableStateOf("FOCUS")
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(
-                timerReceiver,
-                IntentFilter("dev.pranav.reef.TIMER_UPDATED"),
-                RECEIVER_NOT_EXPORTED
-            )
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            registerReceiver(
-                timerReceiver,
-                IntentFilter("dev.pranav.reef.TIMER_UPDATED")
-            )
-        }
-
-        setContent {
-            val timerState by TimerStateManager.state.collectAsState()
-
-            // Initialize UI state from service if it's running
-            LaunchedEffect(Unit) {
-                if (timerState.isRunning || timerState.isPaused) {
-                    currentTimeLeft =
-                        intent.getStringExtra(FocusModeService.EXTRA_TIME_LEFT) ?: "00:00"
-                    currentTimerState = timerState.pomodoroPhase.name
-                } else if (intent.hasExtra(FocusModeService.EXTRA_TIME_LEFT)) {
-                    currentTimeLeft =
-                        intent.getStringExtra(FocusModeService.EXTRA_TIME_LEFT) ?: "00:00"
-                    currentTimerState = timerState.pomodoroPhase.name
-                }
-            }
-
-            ReefTheme {
-                FocusTimerScreen(
-                    isTimerRunning = timerState.isRunning,
-                    isPaused = timerState.isPaused,
-                    currentTimeLeft = currentTimeLeft,
-                    currentTimerState = currentTimerState,
-                    isStrictMode = timerState.isStrictMode,
-                    onStartTimer = { config -> startFocusMode(config) },
-                    onPauseTimer = { pauseFocusMode() },
-                    onResumeTimer = { resumeFocusMode() },
-                    onCancelTimer = { cancelFocusMode() },
-                    onBackPressed = { handleBackPress() }
-                )
-            }
-        }
-    }
-
-    private fun startFocusMode(config: TimerConfig) {
-        when (config) {
-            is TimerConfig.Simple -> {
-                prefs.edit {
-                    putBoolean("focus_mode", true)
-                    putBoolean("pomodoro_mode", false)
-                    putLong("focus_time", config.minutes * 60 * 1000L)
-                    putBoolean("strict_mode", config.strictMode)
-                }
-            }
-
-            is TimerConfig.Pomodoro -> {
-                prefs.edit {
-                    putBoolean("focus_mode", true)
-                    putBoolean("pomodoro_mode", true)
-                    putLong("focus_time", config.focusMinutes * 60 * 1000L)
-                    putLong("pomodoro_focus_duration", config.focusMinutes * 60 * 1000L)
-                    putLong("pomodoro_short_break_duration", config.shortBreakMinutes * 60 * 1000L)
-                    putLong("pomodoro_long_break_duration", config.longBreakMinutes * 60 * 1000L)
-                    putInt("pomodoro_cycles_before_long_break", config.cycles)
-                    putInt("pomodoro_current_cycle", 1)  // Start from cycle 1 instead of 0
-                    putString("pomodoro_state", "FOCUS")
-                    putBoolean("strict_mode", config.strictMode)
-                }
-            }
-        }
-
-        startForegroundService(Intent(this, FocusModeService::class.java))
-    }
-
-    private fun pauseFocusMode() {
-        startService(Intent(this, FocusModeService::class.java).apply {
-            action = FocusModeService.ACTION_PAUSE
-        })
-    }
-
-    private fun resumeFocusMode() {
-        startService(Intent(this, FocusModeService::class.java).apply {
-            action = FocusModeService.ACTION_RESUME
-        })
-    }
-
-    fun restartFocusMode() {
-        startService(Intent(this, FocusModeService::class.java).apply {
-            action = FocusModeService.ACTION_RESTART
-        })
-    }
-
-    private fun cancelFocusMode() {
-        stopService(Intent(this, FocusModeService::class.java))
-        prefs.edit {
-            putBoolean("focus_mode", false)
-            remove("strict_mode")
-        }
-    }
-
-    private fun handleBackPress() {
-        val timerState = TimerStateManager.state.value
-        if (timerState.isRunning && !timerState.isPaused) {
-            startActivity(Intent(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_HOME)
-            })
-        } else {
-            finish()
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        unregisterReceiver(timerReceiver)
-        val timerState = TimerStateManager.state.value
-        if (!timerState.isRunning && !timerState.isPaused) {
-            prefs.edit {
-                putBoolean("focus_mode", false)
-                remove("strict_mode")
-            }
-        }
-    }
-}
-
-@OptIn(
-    ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class
-)
 @Composable
-fun FocusTimerScreen(
+fun TimerContent(
     isTimerRunning: Boolean,
     isPaused: Boolean,
     currentTimeLeft: String,
@@ -217,7 +51,52 @@ fun FocusTimerScreen(
     onPauseTimer: () -> Unit,
     onResumeTimer: () -> Unit,
     onCancelTimer: () -> Unit,
-    onBackPressed: () -> Unit,
+    onRestartTimer: () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        AnimatedContent(
+            targetState = isTimerRunning,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(300)) togetherWith
+                        fadeOut(animationSpec = tween(300))
+            },
+            label = "timer_state"
+        ) { running ->
+            if (running) {
+                RunningTimerView(
+                    timeLeft = currentTimeLeft,
+                    timerState = currentTimerState,
+                    isPaused = isPaused,
+                    isStrictMode = isStrictMode,
+                    onPause = onPauseTimer,
+                    onResume = onResumeTimer,
+                    onCancel = onCancelTimer,
+                    onRestart = onRestartTimer
+                )
+            } else {
+                FocusTimerSetupView(onStart = onStartTimer)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun TimerScreen(
+    isTimerRunning: Boolean,
+    isPaused: Boolean,
+    currentTimeLeft: String,
+    currentTimerState: String,
+    isStrictMode: Boolean,
+    onStartTimer: (TimerConfig) -> Unit,
+    onPauseTimer: () -> Unit,
+    onResumeTimer: () -> Unit,
+    onCancelTimer: () -> Unit,
+    onRestartTimer: () -> Unit,
+    onBackPressed: () -> Unit
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -242,68 +121,20 @@ fun FocusTimerScreen(
                 .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
-            AnimatedContent(
-                targetState = isTimerRunning,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(300)) togetherWith
-                            fadeOut(animationSpec = tween(300))
-                },
-                label = "timer_state"
-            ) { running ->
-                if (running) {
-                    val context = LocalActivity.current as TimerActivity
-                    RunningTimerView(
-                        timeLeft = currentTimeLeft,
-                        timerState = currentTimerState,
-                        isPaused = isPaused,
-                        isStrictMode = isStrictMode,
-                        onPause = onPauseTimer,
-                        onResume = onResumeTimer,
-                        onCancel = onCancelTimer,
-                        onRestart = { context.restartFocusMode() }
-                    )
-                } else {
-                    FocusTimerSetupView(
-                        onStart = onStartTimer
-                    )
-                }
-            }
+            TimerContent(
+                isTimerRunning = isTimerRunning,
+                isPaused = isPaused,
+                currentTimeLeft = currentTimeLeft,
+                currentTimerState = currentTimerState,
+                isStrictMode = isStrictMode,
+                onStartTimer = onStartTimer,
+                onPauseTimer = onPauseTimer,
+                onResumeTimer = onResumeTimer,
+                onCancelTimer = onCancelTimer,
+                onRestartTimer = onRestartTimer
+            )
         }
     }
-}
-
-@Preview
-@Composable
-fun TimerScreenPreview() {
-    FocusTimerScreen(
-        isTimerRunning = false,
-        isPaused = false,
-        currentTimeLeft = "25:00",
-        currentTimerState = "FOCUS",
-        isStrictMode = false,
-        onStartTimer = { _ -> },
-        onPauseTimer = {},
-        onResumeTimer = {},
-        onCancelTimer = {},
-        onBackPressed = {}
-    )
-}
-
-@Preview
-@Composable
-fun TimerScreenRunningPreview() {
-    FocusTimerScreen(
-        isTimerRunning = true,
-        isPaused = false,
-        currentTimeLeft = "24:59",
-        currentTimerState = "FOCUS",
-        isStrictMode = false,
-        onStartTimer = { _ -> },
-        onPauseTimer = {},
-        onResumeTimer = {},
-        onCancelTimer = {},
-        onBackPressed = {}
-    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -328,7 +159,6 @@ fun FocusTimerSetupView(onStart: (TimerConfig) -> Unit) {
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -422,7 +252,6 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
                 }
             }
 
-            // Time display
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -452,7 +281,6 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
                 )
             }
 
-            // Decrement buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
@@ -487,7 +315,6 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
 
             Spacer(Modifier.height(8.dp))
 
-            // Labels
             Row(
                 modifier = Modifier.fillMaxWidth(0.8f),
                 horizontalArrangement = Arrangement.SpaceAround
@@ -497,10 +324,8 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
             }
         }
 
-
         Spacer(Modifier.weight(1f))
 
-        // Strict Mode Toggle
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -542,7 +367,7 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Row(
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
@@ -566,19 +391,16 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
                 label = { Text(pluralStringResource(R.plurals.hours_label, 3, 3)) })
             AssistChip(
                 onClick = { hours = 1; minutes = 30 },
-                label = { Text(stringResource(R.string.hour_min_short_suffix, 1, 30)) })
+                label = { Text(stringResource(R.string.hour_min_short_suffix, 1, 30, 30)) })
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = { onStart(TimerConfig.Simple(totalMinutes, isStrictMode)) },
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             enabled = totalMinutes > 0,
-            shapes = ButtonDefaults.shapes(
-                pressedShape = ButtonDefaults.pressedShape
-            ),
+            shapes = ButtonDefaults.shapes(pressedShape = ButtonDefaults.pressedShape),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -726,9 +548,7 @@ fun PomodoroFocusSetup(onStart: (TimerConfig) -> Unit) {
                 )
             },
             modifier = Modifier.fillMaxWidth(),
-            shapes = ButtonDefaults.shapes(
-                pressedShape = ButtonDefaults.pressedShape
-            ),
+            shapes = ButtonDefaults.shapes(pressedShape = ButtonDefaults.pressedShape),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -762,7 +582,6 @@ fun ExpressiveCounter(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,
@@ -825,7 +644,6 @@ fun RunningTimerView(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxSize()
         ) {
-            // Pomodoro mode indicator
             if (isPomodoroMode) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -876,7 +694,6 @@ fun RunningTimerView(
 
             val isBreak = timerState == "SHORT_BREAK" || timerState == "LONG_BREAK"
 
-            // State icon
             if (isBreak) {
                 Icon(
                     imageVector = Icons.Rounded.PlayArrow,
@@ -960,7 +777,7 @@ fun RunningTimerView(
     }
 }
 
-@ExperimentalMaterial3ExpressiveApi
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RunningTimerActions(
     modifier: Modifier = Modifier,
@@ -968,7 +785,7 @@ fun RunningTimerActions(
     onPause: () -> Unit,
     onResume: () -> Unit,
     onCancel: () -> Unit,
-    onRestart: () -> Unit = {},
+    onRestart: () -> Unit = {}
 ) {
     Row(
         modifier = modifier.padding(horizontal = 24.dp),
@@ -1016,9 +833,7 @@ fun RunningTimerActions(
 
         OutlinedButton(
             onClick = onRestart,
-            shapes = ButtonDefaults.shapes(
-                shape = ButtonDefaults.elevatedShape
-            ),
+            shapes = ButtonDefaults.shapes(shape = ButtonDefaults.elevatedShape),
             modifier = Modifier.size(60.dp)
         ) {
             Text(
@@ -1026,5 +841,25 @@ fun RunningTimerActions(
                 style = MaterialTheme.typography.headlineSmall
             )
         }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun TimerScreenPreview() {
+    MaterialTheme {
+        TimerScreen(
+            isTimerRunning = false,
+            isPaused = false,
+            currentTimeLeft = "25:00",
+            currentTimerState = "FOCUS",
+            isStrictMode = false,
+            onStartTimer = {},
+            onPauseTimer = {},
+            onResumeTimer = {},
+            onCancelTimer = {},
+            onRestartTimer = {},
+            onBackPressed = {}
+        )
     }
 }

@@ -1,10 +1,7 @@
-package dev.pranav.reef
+package dev.pranav.reef.screens
 
 import android.content.pm.ApplicationInfo
 import android.graphics.drawable.Drawable
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -35,12 +32,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import com.google.android.material.transition.platform.MaterialSharedAxis
+import dev.pranav.reef.R
 import dev.pranav.reef.data.Routine
 import dev.pranav.reef.data.RoutineSchedule
-import dev.pranav.reef.ui.ReefTheme
 import dev.pranav.reef.util.RoutineManager
-import dev.pranav.reef.util.applyDefaults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,29 +43,6 @@ import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
-
-class CreateRoutineActivity: ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        applyDefaults()
-
-        window.enterTransition = MaterialSharedAxis(MaterialSharedAxis.Z, true)
-        window.returnTransition = MaterialSharedAxis(MaterialSharedAxis.Z, false)
-
-        super.onCreate(savedInstanceState)
-
-        val routineId = intent.getStringExtra("routine_id")
-
-        setContent {
-            ReefTheme {
-                CreateRoutineScreen(
-                    routineId = routineId,
-                    onBackPressed = { onBackPressedDispatcher.onBackPressed() },
-                    onSaveComplete = { finishAfterTransition() }
-                )
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -468,7 +440,7 @@ fun CreateRoutineScreen(
 }
 
 @Composable
-fun AppLimitItem(
+private fun AppLimitItem(
     appLimit: Routine.AppLimit,
     onRemove: () -> Unit,
     context: android.content.Context
@@ -541,7 +513,7 @@ fun AppLimitItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TimePickerDialog(
+private fun TimePickerDialog(
     initialTime: LocalTime,
     onTimeSelected: (LocalTime) -> Unit,
     onDismiss: () -> Unit,
@@ -579,7 +551,7 @@ fun TimePickerDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppSelectorDialog(
+private fun AppSelectorDialog(
     onAppSelected: (packageName: String, appName: String, limitMinutes: Int) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -592,10 +564,7 @@ fun AppSelectorDialog(
 
     val filteredApps = remember(apps, searchQuery) {
         if (searchQuery.isBlank()) apps else apps.filter {
-            it.second.contains(
-                searchQuery,
-                ignoreCase = true
-            )
+            it.second.contains(searchQuery, ignoreCase = true)
         }
     }
 
@@ -698,11 +667,11 @@ fun AppSelectorDialog(
                 Column {
                     listOf(
                         pluralStringResource(R.plurals.minutes_label, 0) to 0,
-                        pluralStringResource(R.plurals.minutes_label, 15) to 15,
-                        pluralStringResource(R.plurals.minutes_label, 30) to 30,
-                        stringResource(R.string.hour_label) to 60,
-                        pluralStringResource(R.plurals.hours_label, 2) to 120,
-                        pluralStringResource(R.plurals.hours_label, 3) to 180
+                        pluralStringResource(R.plurals.minutes_label, 15, 15) to 15,
+                        pluralStringResource(R.plurals.minutes_label, 30, 30) to 30,
+                        stringResource(R.string.hour_label, 1) to 60,
+                        pluralStringResource(R.plurals.hours_label, 2, 2) to 120,
+                        pluralStringResource(R.plurals.hours_label, 3, 3) to 180
                     ).forEach { (label, minutes) ->
                         TextButton(
                             onClick = {

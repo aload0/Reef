@@ -2,6 +2,7 @@ package dev.pranav.reef
 
 import android.content.Intent
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -9,37 +10,43 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.EventNote
+import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import dev.pranav.reef.timer.TimerStateManager
+import dev.pranav.reef.ui.Typography
 import dev.pranav.reef.util.isAccessibilityServiceEnabledForBlocker
 import dev.pranav.reef.util.prefs
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun MainScreen(
+fun HomeContent(
     onNavigateToTimer: () -> Unit,
     onNavigateToUsage: () -> Unit,
     onNavigateToRoutines: () -> Unit,
     onNavigateToWhitelist: () -> Unit,
-    onNavigateToSettings: () -> Unit,
     onNavigateToIntro: () -> Unit,
-    onRequestAccessibility: () -> Unit
+    onRequestAccessibility: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") slideProgress: Float = 0f,
+    onSlideProgressChange: (Float) -> Unit = {}
 ) {
     val context = LocalContext.current
     val timerState by TimerStateManager.state.collectAsState()
@@ -63,80 +70,52 @@ fun MainScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.surface,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            stringResource(R.string.app_name),
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        AnimatedWaveIcon()
-                    }
-                },
-                actions = {
-                    FilledTonalIconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            Icons.Rounded.Settings,
-                            contentDescription = stringResource(R.string.settings)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(24.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+            .navigationBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(8.dp))
 
-            HeroFocusButton(
-                onClick = {
-                    if (context.isAccessibilityServiceEnabledForBlocker()) {
-                        onNavigateToTimer()
-                    } else {
-                        onRequestAccessibility()
-                    }
+        FocusModeCard(
+            onSlideProgress = onSlideProgressChange,
+            onClick = {
+                if (context.isAccessibilityServiceEnabledForBlocker()) {
+                    onNavigateToTimer()
+                } else {
+                    onRequestAccessibility()
                 }
+            }
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AppUsageCard(
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToUsage
             )
-
-            Spacer(Modifier.height(48.dp))
-
-            Text(
-                text = stringResource(R.string.manage_focus),
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(start = 4.dp, bottom = 16.dp)
+            TimeLimitsCard(
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToWhitelist
             )
-
-            NavigationCards(
-                onNavigateToUsage = onNavigateToUsage,
-                onNavigateToRoutines = onNavigateToRoutines,
-                onNavigateToWhitelist = onNavigateToWhitelist
-            )
-
-            Spacer(Modifier.height(32.dp))
         }
+
+        Spacer(Modifier.height(12.dp))
+
+        RoutinesCard(onClick = onNavigateToRoutines)
+
+        Spacer(Modifier.height(12.dp))
+
+        PomodoroTimerCard(onClick = onNavigateToTimer)
+
+        Spacer(Modifier.height(16.dp))
     }
 
     if (showDiscordDialog) {
@@ -179,6 +158,402 @@ fun MainScreen(
 }
 
 @Composable
+private fun FocusModeCard(
+    onSlideProgress: (Float) -> Unit,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = {},
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(260.dp),
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            FocusTogglePill(
+                onSlideProgress = onSlideProgress,
+                onActivate = onClick
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                text = "Focus Mode",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = "Slide to start a deep work\nsession",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                lineHeight = 22.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun FocusTogglePill(
+    onSlideProgress: (Float) -> Unit,
+    onActivate: () -> Unit
+) {
+    val pillWidth = 200.dp
+    val thumbSize = 60.dp
+    val padding = 6.dp
+    val maxOffset = with(LocalDensity.current) { (pillWidth - thumbSize - padding * 2).toPx() }
+
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
+
+    val animatedOffset by animateFloatAsState(
+        targetValue = if (isDragging) offsetX else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "thumb_offset"
+    )
+
+    val progress = (animatedOffset / maxOffset).coerceIn(0f, 1f)
+
+    LaunchedEffect(progress) {
+        onSlideProgress(progress)
+    }
+
+    Surface(
+        modifier = Modifier
+            .width(pillWidth)
+            .height(72.dp)
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragStart = { isDragging = true },
+                    onDragEnd = {
+                        if (offsetX >= maxOffset * 0.7f) {
+                            onActivate()
+                        }
+                        offsetX = 0f
+                        isDragging = false
+                    },
+                    onDragCancel = {
+                        offsetX = 0f
+                        isDragging = false
+                    },
+                    onHorizontalDrag = { _, dragAmount ->
+                        offsetX = (offsetX + dragAmount).coerceIn(0f, maxOffset)
+                    }
+                )
+            },
+        shape = RoundedCornerShape(36.dp),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f + progress * 0.4f)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (progress > 0.5f) "Release" else "Slide",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                        alpha = (1f - progress).coerceIn(0.3f, 0.7f)
+                    ),
+                    modifier = Modifier.padding(end = 16.dp)
+                )
+            }
+
+            Surface(
+                modifier = Modifier
+                    .size(thumbSize)
+                    .offset { IntOffset(animatedOffset.roundToInt(), 0) },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                shadowElevation = 4.dp + (4.dp * progress)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        if (progress > 0.5f) Icons.Rounded.Check else Icons.Filled.Waves,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppUsageCard(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(180.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        Icons.Rounded.BarChart,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+
+            Column {
+                Text(
+                    text = "App Usage",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    fontFamily = Typography.DMSerif,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    text = "2h 14m today",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimeLimitsCard(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(180.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        Icons.Rounded.HourglassEmpty,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+            }
+
+            Column {
+                Text(
+                    text = "Time Limits",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+                Text(
+                    text = "3 apps capped",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoutinesCard(onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.EventNote,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Routines",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Scheduled: \"Deep Work\" at 2:00 PM",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Surface(
+                modifier = Modifier.size(36.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PomodoroTimerCard(onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier.size(40.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.secondaryContainer
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                Icons.Rounded.Timer,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Pomodoro Timer",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Text(
+                    text = "25:00",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            LinearProgressIndicator(
+                progress = { 0.4f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
 private fun AnimatedWaveIcon() {
     val infiniteTransition = rememberInfiniteTransition(label = "wave")
     val rotation by infiniteTransition.animateFloat(
@@ -199,218 +574,6 @@ private fun AnimatedWaveIcon() {
             .rotate(rotation),
         tint = MaterialTheme.colorScheme.primary
     )
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun HeroFocusButton(onClick: () -> Unit) {
-    //ElevatedCard(
-    //    onClick = onClick,
-    //    modifier = Modifier.fillMaxWidth(),
-    //    shape = RoundedCornerShape(28.dp),
-    //    colors = CardDefaults.elevatedCardColors(
-    //        containerColor = MaterialTheme.colorScheme.primaryContainer
-    //    ),
-    //    elevation = CardDefaults.elevatedCardElevation(
-    //        defaultElevation = 2.dp,
-    //        pressedElevation = 1.dp
-    //    )
-    //) {
-    //    Column(
-    //        modifier = Modifier
-    //            .fillMaxWidth()
-    //            .padding(24.dp),
-    //        verticalArrangement = Arrangement.spacedBy(16.dp)
-    //    ) {
-    //        Row(
-    //            modifier = Modifier.fillMaxWidth(),
-    //            horizontalArrangement = Arrangement.SpaceBetween,
-    //            verticalAlignment = Alignment.CenterVertically
-    //        ) {
-    //            Text(
-    //                text = "Focus Mode",
-    //                style = MaterialTheme.typography.headlineMedium,
-    //                fontWeight = FontWeight.Bold,
-    //                color = MaterialTheme.colorScheme.onPrimaryContainer
-    //            )
-    //
-    //            Surface(
-    //                modifier = Modifier.size(56.dp),
-    //                shape = CircleShape,
-    //                color = MaterialTheme.colorScheme.primary
-    //            ) {
-    //                Box(
-    //                    contentAlignment = Alignment.Center,
-    //                    modifier = Modifier.fillMaxSize()
-    //                ) {
-    //                    Icon(
-    //                        Icons.Rounded.PlayArrow,
-    //                        contentDescription = "Start",
-    //                        modifier = Modifier.size(32.dp),
-    //                        tint = MaterialTheme.colorScheme.onPrimary
-    //                    )
-    //                }
-    //            }
-    //        }
-    //
-    //        Text(
-    //            text = "Start a focused work session",
-    //            style = MaterialTheme.typography.bodyLarge,
-    //            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-    //        )
-    //    }
-    //}
-
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth(0.8f)
-            .aspectRatio(1.3f),
-        shapes = IconButtonDefaults.shapes(pressedShape = IconButtonDefaults.extraLargePressedShape),
-        colors = IconButtonDefaults.iconButtonColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                Icons.Rounded.Waves,
-                contentDescription = stringResource(R.string.focus_mode),
-                modifier = Modifier.fillMaxSize(0.6f),
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            Text(
-                text = stringResource(R.string.focus_mode),
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun NavigationCards(
-    onNavigateToUsage: () -> Unit,
-    onNavigateToRoutines: () -> Unit,
-    onNavigateToWhitelist: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        NavigationCard(
-            icon = Icons.Rounded.BarChart,
-            title = stringResource(R.string.app_usage),
-            description = stringResource(R.string.app_usage_desc),
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            accentColor = MaterialTheme.colorScheme.primary,
-            onClick = onNavigateToUsage
-        )
-
-        NavigationCard(
-            icon = Icons.Rounded.Schedule,
-            title = stringResource(R.string.routines),
-            description = stringResource(R.string.routines_desc),
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            accentColor = MaterialTheme.colorScheme.secondary,
-            onClick = onNavigateToRoutines
-        )
-
-        NavigationCard(
-            icon = Icons.Rounded.Verified,
-            title = stringResource(R.string.whitelist_apps),
-            description = stringResource(R.string.whitelist_apps_desc),
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            accentColor = MaterialTheme.colorScheme.tertiary,
-            onClick = onNavigateToWhitelist
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun NavigationCard(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    containerColor: Color,
-    contentColor: Color,
-    accentColor: Color,
-    onClick: () -> Unit
-) {
-    ElevatedCard(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = containerColor
-        ),
-        elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 2.dp,
-            pressedElevation = 1.dp
-        ),
-        shape = RoundedCornerShape(24.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = CircleShape,
-                color = accentColor.copy(alpha = 0.15f)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = accentColor
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = contentColor
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = contentColor.copy(alpha = 0.7f)
-                )
-            }
-
-            Icon(
-                Icons.AutoMirrored.Rounded.ArrowForward,
-                contentDescription = null,
-                tint = contentColor.copy(alpha = 0.6f),
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
 }
 
 @Composable
@@ -510,4 +673,19 @@ private fun DonateDialog(
             }
         }
     )
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun HomeContentPreview() {
+    MaterialTheme {
+        HomeContent(
+            onNavigateToTimer = {},
+            onNavigateToUsage = {},
+            onNavigateToRoutines = {},
+            onNavigateToWhitelist = {},
+            onNavigateToIntro = {},
+            onRequestAccessibility = {}
+        )
+    }
 }

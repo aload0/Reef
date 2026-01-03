@@ -10,8 +10,8 @@ import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import dev.pranav.reef.MainActivity
 import dev.pranav.reef.R
-import dev.pranav.reef.RoutinesActivity
 import dev.pranav.reef.data.Routine
 
 object NotificationHelper {
@@ -34,7 +34,9 @@ object NotificationHelper {
     }
 
     fun showRoutineActivatedNotification(context: Context, routine: Routine) {
-        val intent = Intent(context, RoutinesActivity::class.java)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("navigate_to_routines", true)
+        }
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
@@ -65,7 +67,9 @@ object NotificationHelper {
     }
 
     fun showRoutineDeactivatedNotification(context: Context, routine: Routine) {
-        val intent = Intent(context, RoutinesActivity::class.java)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("navigate_to_routines", true)
+        }
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
@@ -99,7 +103,7 @@ object NotificationHelper {
 
         val minutes = (timeRemaining / 60000).toInt()
 
-        val intent = Intent(context, dev.pranav.reef.AppUsageActivity::class.java)
+        val intent = Intent(context, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )

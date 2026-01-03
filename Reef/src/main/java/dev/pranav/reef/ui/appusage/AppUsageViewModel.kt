@@ -34,6 +34,7 @@ enum class UsageRange { TODAY, LAST_7_DAYS }
 enum class UsageSortOrder { TIME_DESC, NAME_ASC }
 
 class AppUsageViewModel(
+    private val context: android.content.Context,
     private val usageStatsManager: UsageStatsManager,
     private val launcherApps: LauncherApps,
     private val packageManager: PackageManager,
@@ -75,7 +76,10 @@ class AppUsageViewModel(
     private var allAppStats: List<AppUsageStats> = emptyList()
 
     init {
-        loadInitialData()
+        // Defer data loading to not block composition
+        viewModelScope.launch {
+            loadInitialData()
+        }
     }
 
     fun setRange(range: UsageRange) {
@@ -122,10 +126,9 @@ class AppUsageViewModel(
         }
     }
 
-    private fun loadInitialData() {
-        viewModelScope.launch(Dispatchers.IO) {
+    private suspend fun loadInitialData() {
+        withContext(Dispatchers.IO) {
             try {
-                _isLoading.value = true
                 val cal = Calendar.getInstance().apply {
                     add(Calendar.DAY_OF_YEAR, -6)
                     set(Calendar.HOUR_OF_DAY, 0)
@@ -136,17 +139,17 @@ class AppUsageViewModel(
                 val startTime = cal.timeInMillis
                 val endTime = System.currentTimeMillis()
 
-                val rawMap = UsageCalculator.calculateUsage(usageStatsManager, startTime, endTime)
+                val rawMap =
+                    UsageCalculator.calculateUsage(context, usageStatsManager, startTime, endTime)
                 allAppStats = processUsageMap(rawMap)
 
                 loadWeekData()
                 filterAndSortData()
-
+            } catch (_: Exception) {
+            } finally {
                 withContext(Dispatchers.Main) {
                     _isLoading.value = false
                 }
-            } catch (_: Exception) {
-                withContext(Dispatchers.Main) { _isLoading.value = false }
             }
         }
     }
@@ -168,7 +171,7 @@ class AppUsageViewModel(
                 if (_selectedDayTimestamp.value != null || selectedRange == UsageRange.TODAY) {
                     processUsageMap(
                         UsageCalculator.calculateUsage(
-                            usageStatsManager,
+                            context, usageStatsManager,
                             startTime,
                             endTime
                         )
@@ -288,7 +291,7 @@ class AppUsageViewModel(
 
             val totalUsageMs = if (endMillis > startMillis) {
                 UsageCalculator.calculateUsage(
-                    usageStatsManager,
+                    context, usageStatsManager,
                     startMillis,
                     endMillis
                 ).filter { it.key != packageName }.values.sum()
@@ -332,7 +335,7 @@ class AppUsageViewModel(
             ); end.set(Calendar.SECOND, 59); end.set(Calendar.MILLISECOND, 999)
 
                 if (UsageCalculator.calculateUsage(
-                        usageStatsManager,
+                        context, usageStatsManager,
                         start.timeInMillis,
                         end.timeInMillis
                     ).values.sum() > 0

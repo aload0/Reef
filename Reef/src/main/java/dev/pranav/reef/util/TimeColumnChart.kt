@@ -56,6 +56,8 @@ internal fun TimeColumnChart(
     dataValues: List<Float> = emptyList(),
     selectedColumnIndex: Int? = null
 ) {
+    if (dataValues.isEmpty()) return
+
     val radius = with(LocalDensity.current) {
         (thickness / 2).toPx()
     }

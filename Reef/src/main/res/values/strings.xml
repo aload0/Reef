@@ -28,6 +28,9 @@
     <string name="remove_limit">Remove Limit</string>
     <string name="daily_usage_limit">Daily Usage Limit</string>
     <string name="app_icon">App Icon</string>
+    <string name="avg_daily">Avg. Daily</string>
+    <string name="peak_usage">Peak Usage</string>
+    <string name="weekly_overview">Weekly</string>
 
     <string name="routines">Routines</string>
     <string name="routines_desc">Schedule focus sessions</string>
@@ -85,10 +88,14 @@
     <string name="app_blocking_subtitle">Configure blocked apps in main screen</string>
     <string name="about_subtitle">App info and credits</string>
     <string name="pomodoro_settings_title">Pomodoro Settings</string>
+    <string name="pomodoro_settings">Pomodoro Settings</string>
     <string name="durations_section">Durations</string>
+    <string name="durations">Durations</string>
     <string name="focus_duration">Focus Duration</string>
     <string name="short_break">Short Break</string>
+    <string name="short_break_duration">Short Break Duration</string>
     <string name="long_break">Long Break</string>
+    <string name="long_break_duration">Long Break Duration</string>
     <string name="cycles_before_long_break">Cycles Before Long Break</string>
     <string name="min_suffix">min</string>
     <string name="cycles_suffix">cycles</string>
@@ -100,6 +107,31 @@
     <string name="vibration">Vibration</string>
     <string name="vibration_description">Vibrate on phase transitions</string>
     <string name="select_transition_sound">Select Transition Sound</string>
+    <string name="automation">Automation</string>
+    <string name="auto_start_breaks">Auto-start Breaks</string>
+    <string name="auto_start_breaks_description">Automatically start break when focus ends</string>
+    <string name="auto_start_focus">Auto-start Focus</string>
+    <string name="auto_start_focus_description">Automatically start focus when break ends</string>
+    <string name="transition_sound">Transition Sound</string>
+    <string name="transition_sound_description">Play sound between phases</string>
+    <string name="select_sound">Select Sound</string>
+    <string name="select_sound_description">Choose a notification sound</string>
+
+    <!-- Notification Settings strings -->
+    <string name="notifications">Notifications</string>
+    <string name="notifications_subtitle">Configure alerts and reminders</string>
+    <string name="notifications_settings_title">Notification Settings</string>
+    <string name="focus_reminders">Focus Reminders</string>
+    <string name="focus_reminders_description">Get reminded to start focus sessions</string>
+    <string name="break_alerts">Break Alerts</string>
+    <string name="break_alerts_description">Alert when it\'s time to take a break</string>
+    <string name="daily_summary">Daily Summary</string>
+    <string name="daily_summary_description">Receive daily screen time reports at 9 PM</string>
+    <string name="daily_summary_title">Daily Screen Time</string>
+    <string name="daily_summary_message">You spent %1$s on your phone today</string>
+    <string name="limit_warnings">Limit Warnings</string>
+    <string name="limit_warnings_description">Warn when approaching app time limits</string>
+    <string name="general_section">General</string>
 
     <!-- Routine Activity strings -->
     <string name="edit_routine">Edit Routine</string>
@@ -115,8 +147,8 @@
     <string name="set_limit_for">Set limit for %1$s</string>
 
     <plurals name="minutes_label">
-        <item quantity="one">%1$d minute</item>
-        <item quantity="other">%1$d minutes</item>
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
     </plurals>
 
     <string name="hour_label">1 hour</string>
@@ -199,6 +231,11 @@
     <string name="view_github_profile">View GitHub Profile</string>
     <string name="support_description_short">Help keep this project maintained and growing</string>
     <string name="donate">Donate</string>
+    <string name="donate_subtitle">Keep Reef free and ad-free forever</string>
+    <string name="donate_dialog_title">Support Development</string>
+    <string name="donate_dialog_message">Reef is completely free with no ads, tracking, or hidden costs. If you find it useful, please consider a small donation to help keep it that way. Your support means everything and keeps this project alive. Thank you!</string>
+    <string name="donate_later">Maybe Later</string>
+    <string name="donate_now">Donate</string>
     <string name="links_title">Links</string>
     <string name="discord_community">Discord Community</string>
     <string name="source_code">Source Code</string>
@@ -245,6 +282,7 @@
     <!-- Notification Helper strings -->
     <string name="blocker_channel_name">Content Blocker</string>
     <string name="blocker_channel_description">Shows reminders for screen time and when apps are blocked.</string>
+    <string name="no_usage_data">No usage data available</string>
     <string name="routine_activated">Routine Activated</string>
     <string name="routine_deactivated">Routine Deactivated</string>
     <string name="routine_has_ended">%1$s has ended</string>

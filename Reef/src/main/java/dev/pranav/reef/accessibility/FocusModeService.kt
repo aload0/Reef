@@ -14,8 +14,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import dev.pranav.reef.MainActivity
 import dev.pranav.reef.R
-import dev.pranav.reef.TimerActivity
 import dev.pranav.reef.timer.PomodoroConfig
 import dev.pranav.reef.timer.PomodoroPhase
 import dev.pranav.reef.timer.TimerSessionState
@@ -356,8 +356,10 @@ class FocusModeService: Service() {
         showPauseButton: Boolean
     ): android.app.Notification {
         if (notificationBuilder == null) {
-            val intent = Intent(this, TimerActivity::class.java).apply {
+            val intent = Intent(this, MainActivity::class.java).apply {
                 putExtra(EXTRA_TIME_LEFT, text)
+                putExtra("navigate_to_timer", true)
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
 
             val pendingIntent = PendingIntent.getActivity(

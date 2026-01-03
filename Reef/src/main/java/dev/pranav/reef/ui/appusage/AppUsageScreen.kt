@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
@@ -23,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -60,7 +58,7 @@ private fun formatTime(context: android.content.Context, timeInMillis: Long): St
 @Composable
 fun AppUsageScreen(
     viewModel: AppUsageViewModel,
-    onBackPressed: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onBackPressed: () -> Unit,
     onAppClick: (AppUsageStats) -> Unit
 ) {
     val appUsageStats by viewModel.appUsageStats
@@ -73,143 +71,111 @@ fun AppUsageScreen(
     val weekOffset by viewModel.weekOffset
     val canGoPrevious by viewModel.canGoPrevious
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var sortMenuExpanded by remember { mutableStateOf(false) }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            stringResource(R.string.app_usage),
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        AnimatedVisibility(!isLoading) {
-                            val count = appUsageStats.size
-                            Text(
-                                if (count == 1) stringResource(R.string.apps_tracked_one) else stringResource(
-                                    R.string.apps_tracked_multiple,
-                                    count
-                                ),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { sortMenuExpanded = true }) {
-                        Icon(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort))
-                    }
-                    DropdownMenu(
-                        expanded = sortMenuExpanded,
-                        onDismissRequest = { sortMenuExpanded = false }
+    Crossfade(targetState = isLoading, label = "loading") { loading ->
+        if (loading) {
+            Column(
+                Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ContainedLoadingIndicator()
+                Spacer(Modifier.height(12.dp))
+                Text(stringResource(R.string.fetching_usage_data))
+            }
+        } else {
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.sort_by_time)) },
-                            onClick = {
-                                viewModel.setSort(UsageSortOrder.TIME_DESC)
-                                sortMenuExpanded = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.sort_az)) },
-                            onClick = {
-                                viewModel.setSort(UsageSortOrder.NAME_ASC)
-                                sortMenuExpanded = false
-                            }
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        }
-    ) { paddingValues ->
-        Crossfade(targetState = isLoading, label = "loading") { loading ->
-            if (loading) {
-                Column(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    ContainedLoadingIndicator()
-                    Spacer(Modifier.height(12.dp))
-                    Text(stringResource(R.string.fetching_usage_data))
-                }
-            } else {
-                LazyColumn(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    item {
                         RangeButtonGroup(range) {
                             viewModel.setRange(it)
                         }
-                    }
-
-                    item {
-                        HeroHeader(
-                            totalTime = appUsageStats.sumOf { it.totalTime },
-                            range = range,
-                            weeklyData = weeklyData,
-                            selectedDayIndex = selectedDayIndex,
-                            onPrevWeek = { viewModel.previousWeek() },
-                            onNextWeek = { viewModel.nextWeek() },
-                            canGoNext = weekOffset < 0,
-                            canGoPrevious = canGoPrevious,
-                            onDaySelected = { index ->
-                                viewModel.selectDayByIndex(
-                                    index,
-                                    weeklyData
-                                )
-                            },
-                            onClearSelection = { viewModel.clearDaySelection() }
-                        )
-                    }
-
-                    val displayedAppStats =
-                        if (isShowingAllApps) appUsageStats else appUsageStats.take(30)
-
-                    itemsIndexed(
-                        items = displayedAppStats,
-                        key = { _, stats -> stats.applicationInfo.packageName }
-                    ) { index, stats ->
-                        AppUsageItem(
-                            stats,
-                            maxUsage,
-                            { onAppClick(stats) },
-                            index,
-                            displayedAppStats.size
-                        )
-                    }
-
-                    if (!isShowingAllApps && appUsageStats.size > 30) {
-                        item {
-                            FilledTonalButton(
-                                onClick = { viewModel.showAllApps() },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 16.dp)
+                        Box {
+                            IconButton(onClick = { sortMenuExpanded = true }) {
+                                Icon(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort))
+                            }
+                            DropdownMenu(
+                                expanded = sortMenuExpanded,
+                                onDismissRequest = { sortMenuExpanded = false }
                             ) {
-                                Text(stringResource(R.string.show_all_apps, appUsageStats.size))
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.sort_by_time)) },
+                                    onClick = {
+                                        viewModel.setSort(UsageSortOrder.TIME_DESC)
+                                        sortMenuExpanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.sort_az)) },
+                                    onClick = {
+                                        viewModel.setSort(UsageSortOrder.NAME_ASC)
+                                        sortMenuExpanded = false
+                                    }
+                                )
                             }
                         }
                     }
-
-                    item { Spacer(Modifier.height(32.dp)) }
                 }
+
+                item {
+                    HeroHeader(
+                        totalTime = appUsageStats.sumOf { it.totalTime },
+                        range = range,
+                        weeklyData = weeklyData,
+                        selectedDayIndex = selectedDayIndex,
+                        onPrevWeek = { viewModel.previousWeek() },
+                        onNextWeek = { viewModel.nextWeek() },
+                        canGoNext = weekOffset < 0,
+                        canGoPrevious = canGoPrevious,
+                        onDaySelected = { index ->
+                            viewModel.selectDayByIndex(
+                                index,
+                                weeklyData
+                            )
+                        },
+                        onClearSelection = { viewModel.clearDaySelection() }
+                    )
+                }
+
+                val displayedAppStats =
+                    if (isShowingAllApps) appUsageStats else appUsageStats.take(30)
+
+                itemsIndexed(
+                    items = displayedAppStats,
+                    key = { _, stats -> stats.applicationInfo.packageName }
+                ) { index, stats ->
+                    AppUsageItem(
+                        stats,
+                        maxUsage,
+                        { onAppClick(stats) },
+                        index,
+                        displayedAppStats.size
+                    )
+                }
+
+                if (!isShowingAllApps && appUsageStats.size > 30) {
+                    item {
+                        FilledTonalButton(
+                            onClick = { viewModel.showAllApps() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp)
+                        ) {
+                            Text(stringResource(R.string.show_all_apps, appUsageStats.size))
+                        }
+                    }
+                }
+
+                item { Spacer(Modifier.height(32.dp)) }
             }
         }
     }
@@ -226,12 +192,8 @@ fun RangeButtonGroup(
 
     val selectedIndex = if (selectedRange == UsageRange.TODAY) 0 else 1
 
-    FlowRow(
-        Modifier
-            .padding(horizontal = 8.dp)
-            .fillMaxWidth(),
+    Row(
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         options.forEachIndexed { index, label ->
             ToggleButton(
@@ -246,9 +208,7 @@ fun RangeButtonGroup(
                     options.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
                     else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                 },
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { role = Role.RadioButton },
+                modifier = Modifier.semantics { role = Role.RadioButton },
             ) {
                 Text(label)
             }
@@ -275,8 +235,10 @@ private fun HeroHeader(
     val resources = LocalResources.current
 
     LaunchedEffect(weeklyData) {
-        modelProducer.runTransaction {
-            columnSeries { series(weeklyData.map { (it.totalUsageHours * 60).toLong() }) }
+        if (weeklyData.any { it.totalUsageHours > 0 }) {
+            modelProducer.runTransaction {
+                columnSeries { series(weeklyData.map { (it.totalUsageHours * 60).toLong() }) }
+            }
         }
     }
 
@@ -313,7 +275,7 @@ private fun HeroHeader(
 
         Spacer(Modifier.height(16.dp))
 
-        if (weeklyData.isNotEmpty()) {
+        if (weeklyData.isNotEmpty() && weeklyData.any { it.totalUsageHours > 0 }) {
             TimeColumnChart(
                 modelProducer,
                 Modifier.padding(horizontal = 16.dp),

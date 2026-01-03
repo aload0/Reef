@@ -20,7 +20,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.MusicOff
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -164,12 +167,6 @@ fun MainSettingsScreen(
             title = stringResource(R.string.pomodoro),
             subtitle = stringResource(R.string.pomodoro_subtitle),
             destination = SettingsScreen.Pomodoro
-        ),
-        SettingsMenuItem(
-            icon = Icons.Rounded.Block,
-            title = stringResource(R.string.app_blocking),
-            subtitle = stringResource(R.string.app_blocking_subtitle),
-            destination = SettingsScreen.Main
         ),
         SettingsMenuItem(
             icon = Icons.Outlined.Info,
@@ -586,7 +583,7 @@ fun SettingsMenuItem(
                 Icon(
                     imageVector = item.icon,
                     contentDescription = null,
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(32.dp),
                     tint = MaterialTheme.colorScheme.secondary
                 )
             },

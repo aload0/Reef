@@ -81,8 +81,12 @@ object UsageTracker {
             routineStart + RoutineScheduleCalculator.getMaxRoutineDuration(routine.schedule)
         val endTime = minOf(System.currentTimeMillis(), routineEnd)
 
-        return UsageCalculator.calculateUsage(usm, routineStart, endTime, packageName)[packageName]
-            ?: 0L
+        return ScreenUsageHelper.fetchUsageInMs(
+            usm,
+            routineStart,
+            endTime,
+            packageName
+        )[packageName] ?: 0L
     }
 
     private fun getDailyUsage(packageName: String, usm: UsageStatsManager): Long {
@@ -94,7 +98,12 @@ object UsageTracker {
         val startOfDay = cal.timeInMillis
         val now = System.currentTimeMillis()
 
-        return UsageCalculator.calculateUsage(usm, startOfDay, now, packageName)[packageName] ?: 0L
+        return ScreenUsageHelper.fetchUsageInMs(
+            usm,
+            startOfDay,
+            now,
+            packageName
+        )[packageName] ?: 0L
     }
 
     private fun shouldSkipPackage(context: Context, packageName: String): Boolean {

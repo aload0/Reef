@@ -51,40 +51,12 @@
             android:label="Reef" />
 
         <activity
-            android:name=".TimerActivity"
-            android:label="Timer Activity" />
-
-        <activity
-            android:name=".AppUsageActivity"
-            android:label="App Usage Activity" />
-
-        <activity
-            android:name=".ApplicationDailyLimitActivity"
-            android:label="Daily Limit" />
-
-        <activity
-            android:name=".WhitelistActivity"
-            android:label="Daily Limit" />
-
-        <activity
-            android:name=".RoutinesActivity"
-            android:label="Routines" />
-
-        <activity
-            android:name=".CreateRoutineActivity"
-            android:label="Create Routine" />
-
-        <activity
             android:name=".AboutActivity"
             android:label="About" />
 
         <activity
             android:name=".PermissionsCheckActivity"
             android:label="Permissions" />
-
-        <activity
-            android:name=".SettingsActivity"
-            android:label="Settings" />
 
         <service
             android:name=".accessibility.BlockerService"
@@ -120,6 +92,10 @@
 
         <receiver
             android:name=".routine.RoutineActivationReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".receivers.DailySummaryReceiver"
             android:exported="false" />
 
     </application>

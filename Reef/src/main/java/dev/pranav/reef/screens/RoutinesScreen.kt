@@ -1,9 +1,5 @@
-package dev.pranav.reef
+package dev.pranav.reef.screens
 
-import android.content.Intent
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,46 +22,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.google.android.material.transition.platform.MaterialSharedAxis
+import dev.pranav.reef.R
 import dev.pranav.reef.data.Routine
 import dev.pranav.reef.data.RoutineSchedule
-import dev.pranav.reef.ui.ReefTheme
+import dev.pranav.reef.routine.RoutineExecutor
 import dev.pranav.reef.util.RoutineManager
-import dev.pranav.reef.util.applyDefaults
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
-
-class RoutinesActivity: ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        applyDefaults()
-
-        window.enterTransition = MaterialSharedAxis(MaterialSharedAxis.Z, true)
-        window.returnTransition = MaterialSharedAxis(MaterialSharedAxis.Z, false)
-
-        super.onCreate(savedInstanceState)
-
-        setContent {
-            ReefTheme {
-                RoutinesScreen(
-                    onBackPressed = { onBackPressedDispatcher.onBackPressed() },
-                    onCreateRoutine = {
-                        startActivity(Intent(this, CreateRoutineActivity::class.java))
-                    },
-                    onEditRoutine = { routine ->
-                        val intent = Intent(this, CreateRoutineActivity::class.java).apply {
-                            putExtra("routine_id", routine.id)
-                        }
-                        startActivity(intent)
-                    }
-                )
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,12 +98,12 @@ fun RoutinesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                InfoCard()
+                RoutineInfoCard()
             }
 
             if (routines.isEmpty()) {
                 item {
-                    EmptyState()
+                    RoutineEmptyState()
                 }
             } else {
                 items(routines, key = { it.id }) { routine ->
@@ -168,7 +135,7 @@ fun RoutinesScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        activateRoutineNow(routine, context)
+                        RoutineExecutor.activateRoutine(context, routine)
                         showActivateDialog = null
 
                         @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -215,16 +182,14 @@ fun RoutinesScreen(
 }
 
 @Composable
-fun InfoCard() {
+private fun RoutineInfoCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = stringResource(R.string.routine_card_title),
                 style = MaterialTheme.typography.titleLarge,
@@ -241,7 +206,7 @@ fun InfoCard() {
 }
 
 @Composable
-fun EmptyState() {
+private fun RoutineEmptyState() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,7 +241,7 @@ fun EmptyState() {
 }
 
 @Composable
-fun RoutineItem(
+private fun RoutineItem(
     routine: Routine,
     onClick: () -> Unit,
     onToggle: (Boolean) -> Unit,
@@ -309,9 +274,7 @@ fun RoutineItem(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = routine.name,
                     style = MaterialTheme.typography.titleMedium
@@ -323,9 +286,7 @@ fun RoutineItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Surface(
                         shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.tertiaryContainer
@@ -335,6 +296,7 @@ fun RoutineItem(
                                 0 -> stringResource(R.string.no_app_limits_set)
                                 else -> pluralStringResource(
                                     R.plurals.app_limits_applied,
+                                    routine.limits.size,
                                     routine.limits.size
                                 )
                             },
@@ -411,12 +373,7 @@ private fun formatSchedule(schedule: RoutineSchedule?, context: android.content.
                 context.getString(R.string.weekends)
             } else {
                 schedule.daysOfWeek.sortedBy { it.value }
-                    .joinToString(", ") {
-                        it.getDisplayName(
-                            TextStyle.SHORT,
-                            Locale.getDefault()
-                        )
-                    }
+                    .joinToString(", ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
             }
             val timeRange = if (schedule.time != null && schedule.endTime != null) {
                 context.getString(
@@ -437,8 +394,4 @@ private fun formatSchedule(schedule: RoutineSchedule?, context: android.content.
 private fun formatTime(time: LocalTime): String {
     val formatter = DateTimeFormatter.ofPattern("HH:mm")
     return time.format(formatter)
-}
-
-private fun activateRoutineNow(routine: Routine, context: android.content.Context) {
-    dev.pranav.reef.routine.RoutineExecutor.activateRoutine(context, routine)
 }

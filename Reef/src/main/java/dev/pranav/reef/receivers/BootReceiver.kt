@@ -29,6 +29,11 @@ class BootReceiver: BroadcastReceiver() {
                 // Reschedule all enabled routines
                 RoutineScheduler.scheduleAllRoutines(context)
 
+                // Reschedule daily summary if enabled
+                if (prefs.getBoolean("daily_summary", false)) {
+                    DailySummaryScheduler.scheduleNextDailySummary(context)
+                }
+
                 val accessibilityIntent = Intent(context, BlockerService::class.java)
                 context.startService(accessibilityIntent)
 
@@ -53,6 +58,11 @@ class BootReceiver: BroadcastReceiver() {
 
                 // Reschedule all enabled routines
                 RoutineScheduler.scheduleAllRoutines(context)
+
+                // Reschedule daily summary if enabled
+                if (prefs.getBoolean("daily_summary", false)) {
+                    DailySummaryScheduler.scheduleNextDailySummary(context)
+                }
 
                 val accessibilityIntent = Intent(context, BlockerService::class.java)
                 context.startService(accessibilityIntent)
