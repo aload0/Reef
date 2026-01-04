@@ -1,6 +1,7 @@
 package dev.pranav.reef
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -49,6 +50,7 @@ class PermissionsCheckActivity: ComponentActivity() {
     }
 }
 
+@SuppressLint("BatteryLife")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PermissionsScreen(onBackClick: () -> Unit) {
@@ -127,6 +129,12 @@ fun PermissionsScreen(onBackClick: () -> Unit) {
                                 val intent =
                                     Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
                                 intent.data = "package:${context.packageName}".toUri()
+                                context.startActivity(intent)
+                            }
+
+                            PermissionType.DND -> {
+                                val intent =
+                                    Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
                                 context.startActivity(intent)
                             }
                         }

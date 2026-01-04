@@ -34,6 +34,9 @@ object NotificationHelper {
     }
 
     fun showRoutineActivatedNotification(context: Context, routine: Routine) {
+        val primaryColor =
+            AndroidUtilities.resolveAttributeColor(context, android.R.attr.colorPrimary)
+
         val intent = Intent(context, MainActivity::class.java).apply {
             putExtra("navigate_to_routines", true)
         }
@@ -53,6 +56,8 @@ object NotificationHelper {
             .setContentTitle(context.getString(R.string.routine_activated))
             .setContentText("${routine.name} - $limitsText")
             .setSmallIcon(R.drawable.round_schedule_24)
+            //.setColor(primaryColor)
+            //.setColorized(true)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -113,6 +118,7 @@ object NotificationHelper {
             .setContentText(
                 context.resources.getQuantityString(
                     R.plurals.app_will_be_blocked_in,
+                    minutes,
                     minutes,
                     appName
                 )

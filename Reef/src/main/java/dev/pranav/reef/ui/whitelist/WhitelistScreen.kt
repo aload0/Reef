@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -23,11 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
-import dev.pranav.reef.R
 
 @Stable
 data class WhitelistedApp(
@@ -46,56 +41,33 @@ sealed interface AllowedAppsState {
 @Composable
 fun WhitelistScreen(
     uiState: AllowedAppsState,
-    onToggle: (WhitelistedApp) -> Unit,
-    onBackClick: () -> Unit
+    onToggle: (WhitelistedApp) -> Unit
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        when (uiState) {
+            is AllowedAppsState.Loading -> {
+                ContainedLoadingIndicator(
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = { Text(stringResource(R.string.whitelist_apps_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+            is AllowedAppsState.Success -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    itemsIndexed(
+                        items = uiState.apps,
+                        key = { _, app -> app.packageName }
+                    ) { index, app ->
+                        WhitelistItem(
+                            app = app,
+                            index = index,
+                            listSize = uiState.apps.size,
+                            onToggle = { onToggle(app) }
                         )
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (uiState) {
-                is AllowedAppsState.Loading -> {
-                    ContainedLoadingIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-
-                is AllowedAppsState.Success -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 16.dp)
-                    ) {
-                        itemsIndexed(
-                            items = uiState.apps,
-                            key = { _, app -> app.packageName }
-                        ) { index, app ->
-                            WhitelistItem(
-                                app = app,
-                                index = index,
-                                listSize = uiState.apps.size,
-                                onToggle = { onToggle(app) }
-                            )
-                        }
                     }
                 }
             }

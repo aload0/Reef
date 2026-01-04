@@ -17,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import dev.pranav.reef.R
-import dev.pranav.reef.SettingsCard
 import dev.pranav.reef.receivers.DailySummaryScheduler
 import dev.pranav.reef.util.prefs
 

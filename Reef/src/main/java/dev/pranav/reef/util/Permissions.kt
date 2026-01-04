@@ -71,6 +71,13 @@ fun Context.hasUsageStatsPermission(): Boolean {
     }
 }
 
+fun Context.hasDndPermission(): Boolean {
+    val notificationManager =
+        getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+            ?: return false
+    return notificationManager.isNotificationPolicyAccessGranted
+}
+
 fun Context.hasNotificationPermission(): Boolean {
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         ContextCompat.checkSelfPermission(
@@ -91,7 +98,8 @@ enum class PermissionType {
     ACCESSIBILITY,
     USAGE_STATS,
     NOTIFICATION,
-    BATTERY_OPTIMIZATION
+    BATTERY_OPTIMIZATION,
+    DND
 }
 
 data class PermissionStatus(
@@ -139,6 +147,15 @@ fun Context.checkAllPermissions(): List<PermissionStatus> {
             isGranted = isBatteryOptimizationDisabled(),
             title = getString(R.string.battery_optimization_exception),
             description = getString(R.string.battery_optimization_exception_description)
+        )
+    )
+
+    permissions.add(
+        PermissionStatus(
+            type = PermissionType.DND,
+            isGranted = hasDndPermission(),
+            title = getString(R.string.enable_dnd),
+            description = getString(R.string.dnd_description)
         )
     )
 

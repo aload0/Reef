@@ -27,7 +27,11 @@ class BlockerService: AccessibilityService() {
 
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
+        val keyguardManager = getSystemService(KEYGUARD_SERVICE) as android.app.KeyguardManager
+        if (keyguardManager.isKeyguardLocked) return
+
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) return
+        if (event.contentChangeTypes == AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION) return
 
         val pkg = event.packageName?.toString() ?: return
         Log.d(
@@ -39,7 +43,7 @@ class BlockerService: AccessibilityService() {
         if (Whitelist.isWhitelisted(pkg)) return
 
         if (prefs.getBoolean("focus_mode", false)) {
-            Log.d("BlockerService", "Blocking $pkg in focus mode")
+            Log.d("BlockerService", "Blocking $pkg in focus mode $event")
             performGlobalAction(GLOBAL_ACTION_HOME)
             showFocusModeNotification(pkg)
             return
@@ -47,6 +51,8 @@ class BlockerService: AccessibilityService() {
 
         val blockReason = UsageTracker.checkBlockReason(this, pkg)
         if (blockReason == UsageTracker.BlockReason.NONE) return
+
+        Log.d("BlockerService", "Blocking $pkg in focus mode $event")
 
         performGlobalAction(GLOBAL_ACTION_HOME)
 

@@ -27,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.pranav.reef.R
+import dev.pranav.reef.ui.Typography
 import dev.pranav.reef.util.prefs
 
 sealed interface TimerConfig {
@@ -53,12 +54,14 @@ fun TimerContent(
     onCancelTimer: () -> Unit,
     onRestartTimer: () -> Unit
 ) {
+    val showRunningView = isTimerRunning || isPaused
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         AnimatedContent(
-            targetState = isTimerRunning,
+            targetState = showRunningView,
             transitionSpec = {
                 fadeIn(animationSpec = tween(300)) togetherWith
                         fadeOut(animationSpec = tween(300))
@@ -96,7 +99,6 @@ fun TimerScreen(
     onResumeTimer: () -> Unit,
     onCancelTimer: () -> Unit,
     onRestartTimer: () -> Unit,
-    onBackPressed: () -> Unit
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -796,7 +798,7 @@ fun RunningTimerActions(
             checked = isPaused,
             onCheckedChange = { if (isPaused) onResume() else onPause() },
             shapes = IconButtonDefaults.toggleableShapes(
-                shape = IconButtonDefaults.largeSquareShape
+                shape = if (isPaused) IconButtonDefaults.largeSquareShape else IconButtonDefaults.extraLargeSquareShape,
             ),
             colors = IconButtonDefaults.filledIconToggleButtonColors(
                 MaterialTheme.colorScheme.secondaryContainer,
@@ -858,8 +860,22 @@ fun TimerScreenPreview() {
             onPauseTimer = {},
             onResumeTimer = {},
             onCancelTimer = {},
-            onRestartTimer = {},
-            onBackPressed = {}
+            onRestartTimer = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RunningTimerScreenPreview() {
+    MaterialTheme {
+        Text(
+            text = "25:69",
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            fontFamily = Typography.DMSerif,
+            fontSize = 88.sp,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

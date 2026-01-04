@@ -1,7 +1,9 @@
 package dev.pranav.reef
 
 import android.content.Intent
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,8 +19,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -46,7 +46,9 @@ fun HomeContent(
     onNavigateToIntro: () -> Unit,
     onRequestAccessibility: () -> Unit,
     @Suppress("UNUSED_PARAMETER") slideProgress: Float = 0f,
-    onSlideProgressChange: (Float) -> Unit = {}
+    onSlideProgressChange: (Float) -> Unit = {},
+    currentTimeLeft: String = "00:00",
+    currentTimerState: String = "FOCUS"
 ) {
     val context = LocalContext.current
     val timerState by TimerStateManager.state.collectAsState()
@@ -57,10 +59,6 @@ fun HomeContent(
         if (prefs.getBoolean("first_run", true)) {
             onNavigateToIntro()
         } else {
-            if (timerState.isRunning) {
-                onNavigateToTimer()
-            }
-
             delay(500)
             if (!prefs.getBoolean("discord_shown", false)) {
                 showDiscordDialog = true
@@ -113,7 +111,13 @@ fun HomeContent(
 
         Spacer(Modifier.height(12.dp))
 
-        PomodoroTimerCard(onClick = onNavigateToTimer)
+        PomodoroTimerCard(
+            onClick = onNavigateToTimer,
+            isRunning = timerState.isRunning,
+            isPaused = timerState.isPaused,
+            currentTimeLeft = currentTimeLeft,
+            currentTimerState = currentTimerState
+        )
 
         Spacer(Modifier.height(16.dp))
     }
@@ -189,7 +193,8 @@ private fun FocusModeCard(
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontFamily = Typography.DMSerif
             )
 
             Spacer(Modifier.height(8.dp))
@@ -265,19 +270,36 @@ private fun FocusTogglePill(
                 .padding(padding),
             contentAlignment = Alignment.CenterStart
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (progress > 0.5f) "Release" else "Slide",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
-                        alpha = (1f - progress).coerceIn(0.3f, 0.7f)
-                    ),
-                    modifier = Modifier.padding(end = 16.dp)
-                )
+            if (progress > 0.5f) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Release",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                            alpha = (1f - progress).coerceIn(0.3f, 0.7f)
+                        ),
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Slide",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                            alpha = (1f - progress).coerceIn(0.3f, 0.7f)
+                        ),
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                }
             }
 
             Surface(
@@ -324,7 +346,7 @@ private fun AppUsageCard(
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
+                color = MaterialTheme.colorScheme.secondaryFixedDim.copy(0.4F)
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -378,7 +400,7 @@ private fun TimeLimitsCard(
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                color = MaterialTheme.colorScheme.tertiaryFixedDim.copy(0.4F)
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -399,6 +421,7 @@ private fun TimeLimitsCard(
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
+                    fontFamily = Typography.DMSerif,
                     color = MaterialTheme.colorScheme.onTertiaryContainer
                 )
                 Text(
@@ -417,7 +440,7 @@ private fun RoutinesCard(onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
     ) {
         Row(
             modifier = Modifier
@@ -481,99 +504,104 @@ private fun RoutinesCard(onClick: () -> Unit) {
 }
 
 @Composable
-private fun PomodoroTimerCard(onClick: () -> Unit) {
+private fun PomodoroTimerCard(
+    onClick: () -> Unit,
+    isRunning: Boolean,
+    isPaused: Boolean,
+    currentTimeLeft: String,
+    currentTimerState: String
+) {
+    val isActive = isRunning || isPaused
+
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = if (isActive)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.secondaryContainer
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Surface(
-                        modifier = Modifier.size(40.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Icon(
-                                Icons.Rounded.Timer,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        }
-                    }
-
-                    Text(
-                        text = "Pomodoro Timer",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
+                    Icon(
+                        if (isPaused) Icons.Rounded.Pause
+                        else if (isRunning) Icons.Rounded.PlayArrow
+                        else Icons.Rounded.Timer,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = if (isActive)
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        else
+                            MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
+            }
 
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "25:00",
+                    text = if (isActive) {
+                        currentTimerState.lowercase().replaceFirstChar { it.uppercase() }
+                    } else {
+                        "Pomodoro Timer"
+                    },
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                     ),
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = if (isActive) {
+                        if (isPaused) "Paused • $currentTimeLeft" else "In progress • $currentTimeLeft"
+                    } else {
+                        "Start a focus session"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Spacer(Modifier.height(12.dp))
-
-            LinearProgressIndicator(
-                progress = { 0.4f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+            Surface(
+                modifier = Modifier.size(36.dp),
+                shape = CircleShape,
+                color = if (isActive)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = if (isActive)
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        else
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
         }
     }
-}
-
-@Composable
-private fun AnimatedWaveIcon() {
-    val infiniteTransition = rememberInfiniteTransition(label = "wave")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = -15f,
-        targetValue = 15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "wave_rotation"
-    )
-
-    Icon(
-        Icons.Rounded.Waves,
-        contentDescription = null,
-        modifier = Modifier
-            .size(24.dp)
-            .rotate(rotation),
-        tint = MaterialTheme.colorScheme.primary
-    )
 }
 
 @Composable

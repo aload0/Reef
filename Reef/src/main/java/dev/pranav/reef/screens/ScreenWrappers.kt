@@ -53,8 +53,7 @@ fun UsageScreenWrapper(
 fun WhitelistScreenWrapper(
     launcherApps: LauncherApps,
     packageManager: PackageManager,
-    currentPackageName: String,
-    onBackClick: () -> Unit
+    currentPackageName: String
 ) {
     var uiState by remember { mutableStateOf<AllowedAppsState>(AllowedAppsState.Loading) }
 
@@ -101,7 +100,6 @@ fun WhitelistScreenWrapper(
 
     WhitelistScreen(
         uiState = uiState,
-        onToggle = ::toggleWhitelist,
-        onBackClick = onBackClick
+        onToggle = ::toggleWhitelist
     )
 }

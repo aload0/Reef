@@ -6,14 +6,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
@@ -37,14 +35,12 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoutinesScreen(
-    onBackPressed: () -> Unit,
     onCreateRoutine: () -> Unit,
     onEditRoutine: (Routine) -> Unit
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
     var routines by remember { mutableStateOf(RoutineManager.getRoutines()) }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showActivateDialog by remember { mutableStateOf<Routine?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -65,35 +61,9 @@ fun RoutinesScreen(
         routines = RoutineManager.getRoutines()
     }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            LargeTopAppBar(
-                title = { Text(stringResource(R.string.routines)) },
-                navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onCreateRoutine,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.create_routine)) }
-            )
-        }
-    ) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -125,6 +95,20 @@ fun RoutinesScreen(
                 }
             }
         }
+
+        ExtendedFloatingActionButton(
+            onClick = onCreateRoutine,
+            icon = { Icon(Icons.Default.Add, contentDescription = null) },
+            text = { Text(stringResource(R.string.create_routine)) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 
     showActivateDialog?.let { routine ->

@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
@@ -34,6 +36,7 @@
         android:directBootAware="true"
         android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.Reef"
+        tools:ignore="UnusedAttribute"
         tools:targetApi="31">
 
         <activity
@@ -61,7 +64,8 @@
         <service
             android:name=".accessibility.BlockerService"
             android:exported="false"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            tools:ignore="AccessibilityPolicy">
 
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />

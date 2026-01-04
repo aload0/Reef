@@ -6,7 +6,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 
-class AndroidUtilities {
+object AndroidUtilities {
     fun vibrate(context: Context, duration: Long = 500) {
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager =
@@ -22,5 +22,11 @@ class AndroidUtilities {
                 VibrationEffect.DEFAULT_AMPLITUDE
             )
         )
+    }
+
+    fun resolveAttributeColor(context: Context, attr: Int): Int {
+        val typedValue = android.util.TypedValue()
+        context.theme.resolveAttribute(attr, typedValue, true)
+        return typedValue.data
     }
 }

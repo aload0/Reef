@@ -1,15 +1,17 @@
 package dev.pranav.reef.screens
 
 import android.content.Intent
+import androidx.compose.animation.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,11 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import dev.pranav.reef.AboutActivity
 import dev.pranav.reef.R
-import dev.pranav.reef.SettingsCard
+import dev.pranav.reef.ui.about.DonateButton
 import dev.pranav.reef.util.prefs
 
 @Composable
-fun MainSettingsContentWithoutScaffold(
+fun MainSettingsContent(
     onNavigate: (SettingsScreenRoute) -> Unit
 ) {
     val context = LocalContext.current
@@ -40,12 +42,6 @@ fun MainSettingsContentWithoutScaffold(
             title = stringResource(R.string.pomodoro),
             subtitle = stringResource(R.string.pomodoro_subtitle),
             destination = SettingsScreenRoute.Pomodoro
-        ),
-        SettingsMenuItem(
-            icon = Icons.Rounded.Block,
-            title = stringResource(R.string.app_blocking),
-            subtitle = stringResource(R.string.app_blocking_subtitle),
-            destination = SettingsScreenRoute.Main
         ),
         SettingsMenuItem(
             icon = Icons.Outlined.Info,
@@ -63,7 +59,7 @@ fun MainSettingsContentWithoutScaffold(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 16.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp)
     ) {
         item {
             Text(
@@ -140,150 +136,53 @@ fun MainSettingsContentWithoutScaffold(
 
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            dev.pranav.reef.ui.about.DonateButton()
+            DonateButton()
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun MainSettingsContent(
-    onBackPressed: () -> Unit,
-    onNavigate: (SettingsScreenRoute) -> Unit
+fun SettingsCard(
+    index: Int,
+    listSize: Int,
+    content: @Composable () -> Unit
 ) {
-    val context = LocalContext.current
-    val resources = LocalResources.current
-    var enableDND by remember { mutableStateOf(prefs.getBoolean("enable_dnd", false)) }
-
-    val menuItems = listOf(
-        SettingsMenuItem(
-            icon = Icons.Rounded.Timer,
-            title = stringResource(R.string.pomodoro),
-            subtitle = stringResource(R.string.pomodoro_subtitle),
-            destination = SettingsScreenRoute.Pomodoro
-        ),
-        SettingsMenuItem(
-            icon = Icons.Rounded.Block,
-            title = stringResource(R.string.app_blocking),
-            subtitle = stringResource(R.string.app_blocking_subtitle),
-            destination = SettingsScreenRoute.Main
-        ),
-        SettingsMenuItem(
-            icon = Icons.Outlined.Info,
-            title = stringResource(R.string.about),
-            subtitle = stringResource(R.string.about_subtitle),
-            destination = SettingsScreenRoute.Main
-        ),
-        SettingsMenuItem(
-            icon = Icons.Outlined.Notifications,
-            title = stringResource(R.string.notifications),
-            subtitle = stringResource(R.string.notifications_subtitle),
-            destination = SettingsScreenRoute.Notifications
+    val shape = when {
+        listSize == 1 -> RoundedCornerShape(24.dp)
+        index == 0 -> RoundedCornerShape(
+            topStart = 24.dp,
+            topEnd = 24.dp,
+            bottomStart = 6.dp,
+            bottomEnd = 6.dp
         )
-    )
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.settings),
-                        style = MaterialTheme.typography.headlineLarge
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
+        index == listSize - 1 -> RoundedCornerShape(
+            topStart = 6.dp,
+            topEnd = 6.dp,
+            bottomStart = 24.dp,
+            bottomEnd = 24.dp
+        )
+
+        else -> RoundedCornerShape(6.dp)
+    }
+
+    AnimatedVisibility(
+        visible = true,
+        enter = fadeIn() + scaleIn(
+            initialScale = 0.95f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+        ),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Card(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 16.dp)
+                .fillMaxWidth()
+                .padding(vertical = 1.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            shape = shape
         ) {
-            item {
-                Text(
-                    text = stringResource(R.string.timer_section),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-
-            item {
-                SettingsCard(index = 0, listSize = 1) {
-                    ListItem(
-                        modifier = Modifier
-                            .clickable {
-                                enableDND = !enableDND
-                                prefs.edit { putBoolean("enable_dnd", enableDND) }
-                            }
-                            .padding(4.dp),
-                        headlineContent = {
-                            Text(
-                                text = stringResource(R.string.enable_dnd),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        },
-                        supportingContent = {
-                            Text(
-                                text = stringResource(R.string.dnd_description),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = enableDND,
-                                onCheckedChange = {
-                                    enableDND = it
-                                    prefs.edit { putBoolean("enable_dnd", it) }
-                                }
-                            )
-                        },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                    )
-                }
-            }
-
-            item {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp))
-            }
-
-            itemsIndexed(
-                items = menuItems,
-                key = { _, item -> item.title }
-            ) { index, item ->
-                SettingsMenuItemRow(
-                    item = item,
-                    index = index,
-                    listSize = menuItems.size,
-                    onClick = {
-                        when (item.destination) {
-                            SettingsScreenRoute.Pomodoro -> onNavigate(SettingsScreenRoute.Pomodoro)
-                            SettingsScreenRoute.Notifications -> onNavigate(SettingsScreenRoute.Notifications)
-                            SettingsScreenRoute.Main -> {
-                                if (item.title == resources.getString(R.string.about)) {
-                                    context.startActivity(
-                                        Intent(
-                                            context,
-                                            AboutActivity::class.java
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    }
-                )
-            }
+            content()
         }
     }
 }

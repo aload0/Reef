@@ -12,7 +12,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.pranav.reef.R
-import dev.pranav.reef.SettingsCard
 
 @Composable
 fun SettingsMenuItemRow(

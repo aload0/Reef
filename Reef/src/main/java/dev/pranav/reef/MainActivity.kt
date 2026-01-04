@@ -22,7 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material3.*
@@ -65,8 +65,7 @@ class MainActivity: ComponentActivity() {
             currentTimerState = intent.getStringExtra(FocusModeService.EXTRA_TIMER_STATE) ?: "FOCUS"
 
             if (left == "00:00" && !prefs.getBoolean("pomodoro_mode", false)) {
-                val androidUtilities = AndroidUtilities()
-                androidUtilities.vibrate(context, 500)
+                AndroidUtilities.vibrate(context, 500)
             }
         }
     }
@@ -100,9 +99,7 @@ class MainActivity: ComponentActivity() {
         applyDefaults()
         addExceptions()
 
-        shouldNavigateToTimer = intent?.getBooleanExtra("navigate_to_timer", false) == true ||
-                TimerStateManager.state.value.isRunning ||
-                TimerStateManager.state.value.isPaused
+        shouldNavigateToTimer = intent?.getBooleanExtra("navigate_to_timer", false) == true
 
         val shouldNavigateToRoutines =
             intent?.getBooleanExtra("navigate_to_routines", false) == true
@@ -143,14 +140,14 @@ class MainActivity: ComponentActivity() {
                 currentDestination?.hasRoute<Screen.Home>() == true ||
                         currentDestination?.hasRoute<Screen.Usage>() == true ||
                         currentDestination?.hasRoute<Screen.Timer>() == true ||
-                        currentDestination?.hasRoute<Screen.Settings>() == true
+                        currentDestination?.hasRoute<Screen.Settings>() == true ||
+                        currentDestination?.hasRoute<Screen.Whitelist>() == true ||
+                        currentDestination?.hasRoute<Screen.Routines>() == true
             }
 
             val showTopBar = remember(currentDestination) {
                 !(currentDestination?.hasRoute<Screen.DailyLimit>() == true ||
-                        currentDestination?.hasRoute<Screen.CreateRoutine>() == true ||
-                        currentDestination?.hasRoute<Screen.Whitelist>() == true ||
-                        currentDestination?.hasRoute<Screen.Routines>() == true)
+                        currentDestination?.hasRoute<Screen.CreateRoutine>() == true)
             }
 
             LaunchedEffect(Unit) {
@@ -191,7 +188,7 @@ class MainActivity: ComponentActivity() {
                         },
                         bottomBar = {
                             AnimatedVisibility(
-                                visible = showBottomBar && !(timerState.isRunning && timerState.isStrictMode),
+                                visible = showBottomBar,
                                 enter = fadeIn() + slideInVertically { it },
                                 exit = fadeOut() + slideOutVertically { it }
                             ) {
@@ -258,7 +255,9 @@ class MainActivity: ComponentActivity() {
                                     },
                                     onSlideProgressChange = { progress ->
                                         slideProgress = progress
-                                    }
+                                    },
+                                    currentTimeLeft = currentTimeLeft,
+                                    currentTimerState = currentTimerState
                                 )
                             }
 
@@ -345,7 +344,6 @@ class MainActivity: ComponentActivity() {
 
                             composable<Screen.Routines> {
                                 RoutinesScreen(
-                                    onBackPressed = { navController.popBackStack() },
                                     onCreateRoutine = {
                                         navController.navigate(
                                             Screen.CreateRoutine(
@@ -372,8 +370,7 @@ class MainActivity: ComponentActivity() {
                                 WhitelistScreenWrapper(
                                     launcherApps = launcherApps,
                                     packageManager = packageManager,
-                                    currentPackageName = packageName,
-                                    onBackClick = { navController.popBackStack() }
+                                    currentPackageName = packageName
                                 )
                             }
 
@@ -524,16 +521,20 @@ private fun UnifiedTopBar(
     val isTimer = currentDestination?.hasRoute<Screen.Timer>() == true
     val isUsage = currentDestination?.hasRoute<Screen.Usage>() == true
     val isSettings = currentDestination?.hasRoute<Screen.Settings>() == true
+    val isWhitelist = currentDestination?.hasRoute<Screen.Whitelist>() == true
+    val isRoutines = currentDestination?.hasRoute<Screen.Routines>() == true
 
     val title = when {
         isHome -> stringResource(R.string.app_name)
         isTimer -> stringResource(R.string.focus_mode_title)
         isUsage -> stringResource(R.string.app_usage)
+        isWhitelist -> stringResource(R.string.whitelist_apps_title)
         isSettings -> stringResource(R.string.settings)
+        isRoutines -> stringResource(R.string.routines)
         else -> ""
     }
 
-    TopAppBar(
+    MediumTopAppBar(
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -541,7 +542,7 @@ private fun UnifiedTopBar(
             ) {
                 if (isHome) {
                     Surface(
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(44.dp),
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
@@ -552,7 +553,7 @@ private fun UnifiedTopBar(
                             Icon(
                                 Icons.Filled.Waves,
                                 contentDescription = null,
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(26.dp),
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
@@ -560,7 +561,7 @@ private fun UnifiedTopBar(
                 }
                 Text(
                     title,
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -569,6 +570,10 @@ private fun UnifiedTopBar(
             containerColor = Color.Transparent
         )
     )
+
+    if (isHome) {
+        Spacer(modifier = Modifier.height(32.dp))
+    }
 }
 
 @Composable
@@ -585,7 +590,7 @@ private fun ReefBottomNavBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp, start = 16.dp, end = 16.dp)
+                .padding(top = 8.dp, bottom = 8.dp, start = 16.dp, end = 16.dp)
                 .navigationBarsPadding(),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
@@ -609,8 +614,8 @@ private fun ReefBottomNavBar(
                 onClick = { onItemSelected(2) }
             )
             BottomNavItem(
-                icon = Icons.Outlined.Person,
-                label = "Profile",
+                icon = Icons.Outlined.Settings,
+                label = "Settings",
                 selected = selectedItem == 3,
                 onClick = { onItemSelected(3) }
             )

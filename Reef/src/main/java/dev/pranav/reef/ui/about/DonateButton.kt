@@ -110,6 +110,7 @@ fun DonateButton() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
+            .clip(RoundedCornerShape(16.dp))
             .clickable { showSheet = true },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)

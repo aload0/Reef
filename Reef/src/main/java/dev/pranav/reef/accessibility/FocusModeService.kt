@@ -1,6 +1,7 @@
 package dev.pranav.reef.accessibility
 
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
@@ -42,7 +43,6 @@ class FocusModeService: Service() {
 
     private val notificationManager by lazy { NotificationManagerCompat.from(this) }
     private val systemNotificationManager by lazy { getSystemService(NOTIFICATION_SERVICE) as NotificationManager }
-    private val androidUtilities by lazy { AndroidUtilities() }
 
     private var countDownTimer: CountDownTimer? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
@@ -112,7 +112,8 @@ class FocusModeService: Service() {
         val notification = createNotification(
             title = getNotificationTitle(),
             text = getString(R.string.time_remaining, formatTime(focusTimeMillis)),
-            showPauseButton = !isStrictMode
+            showPauseButton = !isStrictMode,
+            timeLeft = focusTimeMillis
         )
 
         val foregroundType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -169,7 +170,8 @@ class FocusModeService: Service() {
         updateNotification(
             title = getNotificationTitle(),
             text = formatTime(state.timeRemaining),
-            showPauseButton = false
+            showPauseButton = false,
+            timeLeft = state.timeRemaining
         )
         broadcastTimerUpdate(formatTime(state.timeRemaining))
     }
@@ -186,7 +188,8 @@ class FocusModeService: Service() {
         updateNotification(
             title = getNotificationTitle(),
             text = getString(R.string.time_remaining, formatTime(state.timeRemaining)),
-            showPauseButton = true
+            showPauseButton = true,
+            timeLeft = state.timeRemaining
         )
         startCountdown(state.timeRemaining)
     }
@@ -207,7 +210,8 @@ class FocusModeService: Service() {
         updateNotification(
             title = getNotificationTitle(),
             text = getString(R.string.time_remaining, formatTime(initialDuration)),
-            showPauseButton = !TimerStateManager.state.value.isStrictMode
+            showPauseButton = !TimerStateManager.state.value.isStrictMode,
+            timeLeft = initialDuration
         )
         broadcastTimerUpdate(formatTime(initialDuration))
         startCountdown(initialDuration)
@@ -220,7 +224,8 @@ class FocusModeService: Service() {
         updateNotification(
             title = getNotificationTitle(),
             text = getString(R.string.time_remaining, formattedTime),
-            showPauseButton = !state.isStrictMode && !state.isPaused
+            showPauseButton = !state.isStrictMode && !state.isPaused,
+            timeLeft = millisUntilFinished
         )
         broadcastTimerUpdate(formattedTime)
     }
@@ -245,6 +250,7 @@ class FocusModeService: Service() {
 
         broadcastTimerUpdate("00:00")
         TimerStateManager.reset()
+        restoreDND()
         stopSelf()
     }
 
@@ -259,7 +265,6 @@ class FocusModeService: Service() {
             return
         }
 
-        // Update state with new phase
         TimerStateManager.updateState {
             copy(
                 pomodoroPhase = nextPhase.phase,
@@ -276,7 +281,6 @@ class FocusModeService: Service() {
 
         initialDuration = nextPhase.duration
 
-        // Manage DND based on phase
         if (nextPhase.phase == PomodoroPhase.FOCUS) {
             enableDNDIfNeeded()
         } else {
@@ -284,7 +288,7 @@ class FocusModeService: Service() {
         }
 
         if (prefs.getBoolean("enable_pomodoro_vibration", true)) {
-            androidUtilities.vibrate(this, 1000)
+            AndroidUtilities.vibrate(this, 1000)
         }
 
         if (prefs.getBoolean("enable_pomodoro_sound", true)) {
@@ -294,7 +298,8 @@ class FocusModeService: Service() {
         updateNotification(
             title = getNotificationTitle(),
             text = getString(R.string.time_remaining, formatTime(nextPhase.duration)),
-            showPauseButton = !state.isStrictMode
+            showPauseButton = !state.isStrictMode,
+            timeLeft = nextPhase.duration
         )
         broadcastTimerUpdate(formatTime(nextPhase.duration))
         startCountdown(nextPhase.duration)
@@ -353,8 +358,17 @@ class FocusModeService: Service() {
     private fun createNotification(
         title: String,
         text: String,
-        showPauseButton: Boolean
-    ): android.app.Notification {
+        showPauseButton: Boolean,
+        timeLeft: Long = 0
+    ): Notification {
+
+        val progressPercent = if (initialDuration > 0 && timeLeft > 0) {
+            ((initialDuration - timeLeft).toFloat() / initialDuration.toFloat() * 100f).toInt()
+                .coerceIn(0, 100)
+        } else 0
+
+        val isStrictMode = TimerStateManager.state.value.isStrictMode
+
         if (notificationBuilder == null) {
             val intent = Intent(this, MainActivity::class.java).apply {
                 putExtra(EXTRA_TIME_LEFT, text)
@@ -368,40 +382,60 @@ class FocusModeService: Service() {
 
             notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentIntent(pendingIntent)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_DEFAULT)
+                .setSmallIcon(R.drawable.ic_launcher_monochrome)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
+                .setRequestPromotedOngoing(true)
+                .setCategory(Notification.CATEGORY_PROGRESS)
+                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
         }
+
+        val chipText = "${TimeUnit.MILLISECONDS.toMinutes(timeLeft)}m"
 
         return notificationBuilder!!.apply {
             setContentTitle(title)
             setContentText(text)
+            setProgress(100, progressPercent, false)
+            setShortCriticalText(chipText)
+
             clearActions()
 
-            val action =
-                if (showPauseButton) ACTION_PAUSE to getString(R.string.notification_pause) else ACTION_RESUME to getString(
-                    R.string.notification_resume
+            if (!isStrictMode) {
+                val action = if (showPauseButton) {
+                    ACTION_PAUSE to getString(R.string.notification_pause)
+                } else {
+                    ACTION_RESUME to getString(R.string.notification_resume)
+                }
+
+                val actionIntent =
+                    Intent(this@FocusModeService, FocusModeService::class.java).apply {
+                        this.action = action.first
+                    }
+
+                val actionPendingIntent = PendingIntent.getService(
+                    this@FocusModeService,
+                    if (showPauseButton) 1 else 2,
+                    actionIntent,
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
-            val actionIntent = Intent(this@FocusModeService, FocusModeService::class.java).apply {
-                this.action = action.first
+
+                addAction(
+                    NotificationCompat.Action.Builder(0, action.second, actionPendingIntent).build()
+                )
             }
-            val actionPendingIntent = PendingIntent.getService(
-                this@FocusModeService,
-                if (showPauseButton) 1 else 2,
-                actionIntent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-            addAction(R.drawable.ic_launcher_foreground, action.second, actionPendingIntent)
         }.build()
     }
 
-    private fun updateNotification(title: String, text: String, showPauseButton: Boolean) {
+    private fun updateNotification(
+        title: String,
+        text: String,
+        showPauseButton: Boolean,
+        timeLeft: Long = 0
+    ) {
         notificationManager.notify(
             NOTIFICATION_ID,
-            createNotification(title, text, showPauseButton)
+            createNotification(title, text, showPauseButton, timeLeft)
         )
     }
 
@@ -445,7 +479,9 @@ class FocusModeService: Service() {
     private fun restoreDND() {
         if (previousInterruptionFilter != null) {
             if (systemNotificationManager.isNotificationPolicyAccessGranted) {
-                systemNotificationManager.setInterruptionFilter(previousInterruptionFilter!!)
+                systemNotificationManager.setInterruptionFilter(
+                    previousInterruptionFilter ?: NotificationManager.INTERRUPTION_FILTER_ALL
+                )
                 previousInterruptionFilter = null
             }
         }
