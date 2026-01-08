@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import dev.pranav.reef.util.RoutineManager
 import dev.pranav.reef.util.isPrefsInitialized
 import dev.pranav.reef.util.prefs
 
@@ -21,20 +20,20 @@ class RoutineWorker(
         val routineId = inputData.getString(KEY_ROUTINE_ID) ?: return Result.failure()
         val isActivation = inputData.getBoolean(KEY_IS_ACTIVATION, true)
 
-        val routine = RoutineManager.getRoutines().find { it.id == routineId }
+        val routine = Routines.get(routineId)
         if (routine == null || !routine.isEnabled) {
             Log.w(TAG, "Routine $routineId not found or disabled")
             return Result.success()
         }
 
         if (isActivation) {
-            RoutineExecutor.activateRoutine(context, routine)
+            Routines.startSession(context, routine)
 
             if (routine.schedule.isRecurring) {
                 RoutineScheduler.scheduleActivation(context, routine)
             }
         } else {
-            RoutineExecutor.deactivateRoutine(context, routine)
+            Routines.stopSession(context, routineId)
 
             if (routine.schedule.isRecurring) {
                 RoutineScheduler.scheduleRoutine(context, routine)

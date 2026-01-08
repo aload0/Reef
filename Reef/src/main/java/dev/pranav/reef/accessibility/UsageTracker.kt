@@ -2,8 +2,7 @@ package dev.pranav.reef.accessibility
 
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import android.util.Log
-import dev.pranav.reef.routine.RoutineScheduleCalculator
+import dev.pranav.reef.routine.Routines
 import dev.pranav.reef.util.*
 import java.util.Calendar
 
@@ -23,36 +22,35 @@ object UsageTracker {
 
     fun checkBlockReason(context: Context, packageName: String): BlockReason {
         if (Whitelist.isWhitelisted(packageName)) return BlockReason.NONE
-
         if (shouldSkipPackage(context, packageName)) return BlockReason.NONE
 
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val limitWarningsEnabled = prefs.getBoolean("limit_warnings", true)
 
-        if (RoutineLimits.hasRoutineLimit(packageName)) {
-            val routineUsage = getRoutineUsage(packageName, usm)
-            val limit = RoutineLimits.getRoutineLimit(packageName)
+        // Check routine limits
+        Routines.getLimitMs(packageName)?.let { limitMs ->
+            val usageMs = Routines.getUsageMs(context, packageName)
 
-            Log.d("UsagePolicyEngine", "Routine usage: $routineUsage ms, limit: $limit ms")
+            android.util.Log.d(
+                "UsageTracker",
+                "Routine check for $packageName: usage=$usageMs, limit=$limitMs"
+            )
 
-            if (limitWarningsEnabled && routineUsage >= (limit * 0.85) && routineUsage < limit) {
-                if (!RoutineLimits.hasRoutineReminderBeenSent(packageName)) {
-                    val timeRemaining = limit - routineUsage
-                    NotificationHelper.showReminderNotification(context, packageName, timeRemaining)
-                    RoutineLimits.markRoutineReminderSent(packageName)
-                }
+            if (limitWarningsEnabled && usageMs >= (limitMs * 0.85) && usageMs < limitMs) {
+                val timeRemaining = limitMs - usageMs
+                NotificationHelper.showReminderNotification(context, packageName, timeRemaining)
             }
 
-            if (routineUsage >= limit) {
+            if (usageMs >= limitMs) {
+                android.util.Log.d("UsageTracker", "BLOCKING $packageName due to routine limit")
                 return BlockReason.ROUTINE_LIMIT
             }
         }
 
+        // Check daily limits
         if (AppLimits.hasLimit(packageName)) {
             val dailyUsage = getDailyUsage(packageName, usm)
             val limit = AppLimits.getLimit(packageName)
-
-            Log.d("UsagePolicyEngine", "Daily usage: $dailyUsage ms, limit: $limit ms")
 
             if (limitWarningsEnabled && dailyUsage >= (limit * 0.85) && dailyUsage < limit) {
                 if (!AppLimits.reminderSentToday(packageName)) {
@@ -70,25 +68,6 @@ object UsageTracker {
         return BlockReason.NONE
     }
 
-    private fun getRoutineUsage(
-        packageName: String,
-        usm: UsageStatsManager
-    ): Long {
-        val routineId = RoutineLimits.getActiveRoutineId() ?: return 0L
-        val routine = RoutineManager.getRoutines().find { it.id == routineId } ?: return 0L
-
-        val routineStart = prefs.getLong(RoutineLimits.ROUTINE_START_TIME_KEY, 0L)
-        val routineEnd =
-            routineStart + RoutineScheduleCalculator.getMaxRoutineDuration(routine.schedule)
-        val endTime = minOf(System.currentTimeMillis(), routineEnd)
-
-        return ScreenUsageHelper.fetchUsageInMs(
-            usm,
-            routineStart,
-            endTime,
-            packageName
-        )[packageName] ?: 0L
-    }
 
     private fun getDailyUsage(packageName: String, usm: UsageStatsManager): Long {
         val cal = Calendar.getInstance()

@@ -167,8 +167,8 @@
     <string name="no_app_limits_applied">No app limits were applied</string>
 
     <plurals name="app_limits_applied">
-        <item quantity="one">%1$d app limit has been applied</item>
-        <item quantity="other">%1$d app limits have been applied</item>
+        <item quantity="one">%1$d app limits</item>
+        <item quantity="other">%1$d app limits</item>
     </plurals>
 
     <string name="routine_activated_toast">Routine \'%1$s\' activated! %2$s</string>
@@ -177,7 +177,7 @@
     <string name="no_app_limits_set">No app limits set</string>
 
     <string name="unknown_schedule">Unknown schedule</string>
-    <string name="schedule_from_to"> from %1$s to %2$s</string>
+    <string name="schedule_from_to">\ from %1$s to %2$s</string>
     <string name="schedule_at"> at %1$s</string>
     <string name="every_day">Every day</string>
     <string name="weekdays">Weekdays</string>

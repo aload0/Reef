@@ -28,6 +28,7 @@ import androidx.core.net.toUri
 import dev.pranav.appintro.AppIntro
 import dev.pranav.appintro.IntroPage
 import dev.pranav.reef.R
+import dev.pranav.reef.routine.Routines
 import dev.pranav.reef.ui.ReefTheme
 import dev.pranav.reef.util.*
 
@@ -150,7 +151,7 @@ fun AppIntroScreen() {
                     context.startActivity(intent)
                     false
                 } else {
-                    RoutineManager.saveRoutines(RoutineManager.createDefaultRoutines())
+                    Routines.saveAll(Routines.createDefaults(), context)
                     prefs.edit { putBoolean("first_run", false) }
                     true
                 }

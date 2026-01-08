@@ -35,7 +35,7 @@ import androidx.core.graphics.drawable.toBitmap
 import dev.pranav.reef.R
 import dev.pranav.reef.data.Routine
 import dev.pranav.reef.data.RoutineSchedule
-import dev.pranav.reef.util.RoutineManager
+import dev.pranav.reef.routine.Routines
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -70,7 +70,7 @@ fun CreateRoutineScreen(
 
     LaunchedEffect(routineId) {
         routineId?.let {
-            currentRoutine = RoutineManager.getRoutines().find { it.id == routineId }
+            currentRoutine = Routines.get(routineId)
             currentRoutine?.let { routine ->
                 routineName = routine.name
                 scheduleType = routine.schedule.type
@@ -422,7 +422,7 @@ fun CreateRoutineScreen(
                 TextButton(
                     onClick = {
                         currentRoutine?.let {
-                            RoutineManager.deleteRoutine(it.id, context)
+                            Routines.delete(it.id, context)
                         }
                         onSaveComplete()
                     }
@@ -746,11 +746,6 @@ private fun saveRoutine(
         limits = appLimits
     )
 
-    if (currentRoutine == null) {
-        RoutineManager.addRoutine(routine, context)
-    } else {
-        RoutineManager.updateRoutine(routine, context)
-    }
-
+    Routines.save(routine, context)
     return true
 }

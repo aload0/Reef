@@ -23,8 +23,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import dev.pranav.reef.R
 import dev.pranav.reef.data.Routine
 import dev.pranav.reef.data.RoutineSchedule
-import dev.pranav.reef.routine.RoutineExecutor
-import dev.pranav.reef.util.RoutineManager
+import dev.pranav.reef.routine.Routines
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalTime
@@ -40,7 +39,7 @@ fun RoutinesScreen(
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
-    var routines by remember { mutableStateOf(RoutineManager.getRoutines()) }
+    var routines by remember { mutableStateOf(Routines.getAll()) }
     var showActivateDialog by remember { mutableStateOf<Routine?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -48,7 +47,7 @@ fun RoutinesScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                routines = RoutineManager.getRoutines()
+                routines = Routines.getAll()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -58,7 +57,7 @@ fun RoutinesScreen(
     }
 
     LaunchedEffect(Unit) {
-        routines = RoutineManager.getRoutines()
+        routines = Routines.getAll()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -87,8 +86,8 @@ fun RoutinesScreen(
                             }
                         },
                         onToggle = { _ ->
-                            RoutineManager.toggleRoutine(routine.id, context)
-                            routines = RoutineManager.getRoutines()
+                            Routines.toggle(routine.id, context)
+                            routines = Routines.getAll()
                         },
                         context = context
                     )
@@ -119,25 +118,15 @@ fun RoutinesScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        RoutineExecutor.activateRoutine(context, routine)
+                        Routines.startSession(context, routine)
                         showActivateDialog = null
-
-                        @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-                        val limitsText = when (routine.limits.size) {
-                            0 -> resources.getString(R.string.no_app_limits_applied)
-                            else -> resources.getQuantityString(
-                                R.plurals.app_limits_applied,
-                                routine.limits.size,
-                                routine.limits.size
-                            )
-                        }
 
                         kotlinx.coroutines.MainScope().launch {
                             snackbarHostState.showSnackbar(
                                 resources.getString(
                                     R.string.routine_activated_toast,
                                     routine.name,
-                                    limitsText
+                                    ""
                                 ),
                                 duration = SnackbarDuration.Long
                             )

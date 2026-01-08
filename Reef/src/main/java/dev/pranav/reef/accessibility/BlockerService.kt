@@ -2,12 +2,19 @@ package dev.pranav.reef.accessibility
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.edit
 import dev.pranav.reef.R
+import dev.pranav.reef.routine.Routines
 import dev.pranav.reef.scheduleWatcher
 import dev.pranav.reef.util.BLOCKER_CHANNEL_ID
 import dev.pranav.reef.util.NotificationHelper.createNotificationChannel
@@ -18,12 +25,33 @@ import dev.pranav.reef.util.prefs
 @SuppressLint("AccessibilityPolicy")
 class BlockerService: AccessibilityService() {
 
+    private val routineChangeReceiver = object: BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Routines.ACTION_CHANGED) {
+                val sessionsJson = intent.getStringExtra("sessions") ?: "[]"
+                Log.d("BlockerService", "Routine state changed - received sessions: $sessionsJson")
+
+                prefs.edit { putString("active_routine_sessions", sessionsJson) }
+
+                Log.d("BlockerService", "Updated active sessions in SharedPreferences")
+            }
+        }
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         createNotificationChannel()
 
         if (!isPrefsInitialized) {
-            prefs = getSharedPreferences("prefs", MODE_PRIVATE)
+            val deviceContext = createDeviceProtectedStorageContext()
+            prefs = deviceContext.getSharedPreferences("prefs", MODE_PRIVATE)
+        }
+
+        val filter = IntentFilter(Routines.ACTION_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(routineChangeReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(routineChangeReceiver, filter)
         }
 
         scheduleWatcher(this)
@@ -38,16 +66,12 @@ class BlockerService: AccessibilityService() {
         if (event.contentChangeTypes == AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION) return
 
         val pkg = event.packageName?.toString() ?: return
-        Log.d(
-            "BlockerService",
-            "$pkg, ${Whitelist.isWhitelisted(pkg)}, ${UsageTracker.shouldBlock(this, pkg)}"
-        )
 
         if (pkg == packageName) return
         if (Whitelist.isWhitelisted(pkg)) return
 
         if (prefs.getBoolean("focus_mode", false)) {
-            Log.d("BlockerService", "Blocking $pkg in focus mode $event")
+            Log.d("BlockerService", "Blocking $pkg in focus mode")
             performGlobalAction(GLOBAL_ACTION_HOME)
             showFocusModeNotification(pkg)
             return
@@ -56,7 +80,7 @@ class BlockerService: AccessibilityService() {
         val blockReason = UsageTracker.checkBlockReason(this, pkg)
         if (blockReason == UsageTracker.BlockReason.NONE) return
 
-        Log.d("BlockerService", "Blocking $pkg in focus mode $event")
+        Log.d("BlockerService", "Blocking $pkg due to ${blockReason.name}")
 
         performGlobalAction(GLOBAL_ACTION_HOME)
 
@@ -125,4 +149,13 @@ class BlockerService: AccessibilityService() {
     }
 
     override fun onInterrupt() {}
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            unregisterReceiver(routineChangeReceiver)
+        } catch (e: Exception) {
+            Log.e("BlockerService", "Error unregistering receiver", e)
+        }
+    }
 }
