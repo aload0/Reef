@@ -1,11 +1,13 @@
 package dev.pranav.reef.util
 
 import android.app.usage.UsageEvents
+import android.app.usage.UsageEventsQuery
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.os.Build
 import android.util.Log
 import java.util.Calendar
+
 
 object ScreenUsageHelper {
 
@@ -27,8 +29,6 @@ object ScreenUsageHelper {
         end: Long,
         targetPackage: String? = null
     ): Map<String, Long> {
-        val usageMap = mutableMapOf<String, Long>()
-
         try {
             val eventBasedUsage =
                 calculateUsageFromEvents(usageStatsManager, start, end, targetPackage)
@@ -51,116 +51,75 @@ object ScreenUsageHelper {
         end: Long,
         targetPackage: String? = null
     ): Map<String, Long> {
-        val usageMap = mutableMapOf<String, Long>()
-        val packageForegroundTime = mutableMapOf<String, Long>()
-        var currentForegroundPackage: String? = null
-        var foregroundStartTime: Long = 0
+        val packageForegroundTimes = mutableMapOf<String, Long>()
+        val packageStartTimes = mutableMapOf<String, Long>()
 
-        val lookbackStart = start - (24 * 60 * 60 * 1000)
+        var usageEvents: UsageEvents
+        val event = UsageEvents.Event()
 
         runCatching {
-            val usageEvents = usageStatsManager.queryEvents(lookbackStart, end)
+            val lookBackStart = start - (2 * 60 * 60 * 1000)
 
-            while (usageEvents.hasNextEvent()) {
-                val event = UsageEvents.Event()
-                usageEvents.getNextEvent(event)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                usageEvents = usageStatsManager.queryEvents(lookBackStart, start)
+            } else {
+                val query = UsageEventsQuery.Builder(
+                    lookBackStart,
+                    start,
+                ).setEventTypes(*intArrayOf(UsageEvents.Event.ACTIVITY_RESUMED))
 
-                if (event.timeStamp < start) {
-                    if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED ||
-                        (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                                event.eventType == UsageEvents.Event.ACTIVITY_RESUMED)
-                    ) {
-                        currentForegroundPackage = event.packageName
-                        foregroundStartTime = start
-                    }
-                    continue
+                if (targetPackage != null) {
+                    query.setPackageNames(targetPackage)
                 }
 
-                if (targetPackage != null && event.packageName != targetPackage) {
-                    if (currentForegroundPackage == targetPackage &&
-                        (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED ||
-                                (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                                        event.eventType == UsageEvents.Event.ACTIVITY_RESUMED))
-                    ) {
-                        val duration = event.timeStamp - foregroundStartTime
-                        if (duration > 0) {
-                            packageForegroundTime[targetPackage] =
-                                packageForegroundTime.getOrDefault(targetPackage, 0L) + duration
-                        }
-                        currentForegroundPackage = null
-                    }
-                    continue
+                usageEvents = usageStatsManager.queryEvents(query.build())!!
+            }
+
+            while (usageEvents.hasNextEvent() && usageEvents.getNextEvent(event)) {
+                if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
+                    packageStartTimes[event.packageName] = event.timeStamp
+                }
+            }
+        }
+
+        runCatching {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                usageEvents = usageStatsManager.queryEvents(start, end)
+            } else {
+                val query = UsageEventsQuery.Builder(
+                    start,
+                    end,
+                ).setEventTypes(*intArrayOf(UsageEvents.Event.ACTIVITY_RESUMED, UsageEvents.Event.ACTIVITY_PAUSED))
+
+                if (targetPackage != null) {
+                    query.setPackageNames(targetPackage)
                 }
 
+                usageEvents = usageStatsManager.queryEvents(query.build())!!
+            }
+
+            while (usageEvents.hasNextEvent() && usageEvents.getNextEvent(event)) {
                 val packageName = event.packageName
                 val timestamp = event.timeStamp
 
                 when (event.eventType) {
                     UsageEvents.Event.ACTIVITY_RESUMED -> {
-                        if (currentForegroundPackage != null && currentForegroundPackage != packageName) {
-                            val duration = timestamp - foregroundStartTime
-                            if (duration > 0 && foregroundStartTime >= start) {
-                                packageForegroundTime[currentForegroundPackage!!] =
-                                    packageForegroundTime.getOrDefault(
-                                        currentForegroundPackage!!,
-                                        0L
-                                    ) + duration
-                            }
-                        }
-                        currentForegroundPackage = packageName
-                        foregroundStartTime = timestamp
+                        packageStartTimes[packageName] = timestamp
                     }
 
-                    UsageEvents.Event.ACTIVITY_PAUSED, UsageEvents.Event.ACTIVITY_STOPPED -> {
-                        if (currentForegroundPackage == packageName) {
-                            val duration = timestamp - foregroundStartTime
-                            if (duration > 0 && foregroundStartTime >= start) {
-                                packageForegroundTime[packageName] =
-                                    packageForegroundTime.getOrDefault(packageName, 0L) + duration
-                            }
-                            currentForegroundPackage = null
-                        }
-                    }
-
-                    UsageEvents.Event.SCREEN_INTERACTIVE -> {
-                        if (currentForegroundPackage != null) {
-                            foregroundStartTime = timestamp
-                        }
-                    }
-
-                    UsageEvents.Event.SCREEN_NON_INTERACTIVE -> {
-                        if (currentForegroundPackage != null) {
-                            val duration = timestamp - foregroundStartTime
-                            if (duration > 0 && foregroundStartTime >= start) {
-                                packageForegroundTime[currentForegroundPackage!!] =
-                                    packageForegroundTime.getOrDefault(
-                                        currentForegroundPackage!!,
-                                        0L
-                                    ) + duration
-                            }
-                            currentForegroundPackage = null
+                    UsageEvents.Event.ACTIVITY_PAUSED -> {
+                        packageStartTimes[packageName]?.let { startTime ->
+                            val duration = timestamp - startTime
+                            packageForegroundTimes[packageName] =
+                                packageForegroundTimes.getOrDefault(packageName, 0L) + duration
+                            packageStartTimes.remove(packageName)
                         }
                     }
                 }
             }
-
-            if (currentForegroundPackage != null && foregroundStartTime >= start) {
-                val duration = end - foregroundStartTime
-                if (duration > 0) {
-                    packageForegroundTime[currentForegroundPackage!!] =
-                        packageForegroundTime.getOrDefault(
-                            currentForegroundPackage!!,
-                            0L
-                        ) + duration
-                }
-            }
         }
 
-        packageForegroundTime.forEach { (pkg, time) ->
-            usageMap[pkg] = time
-        }
-
-        return usageMap.filterValues { it > 0L }
+        return packageForegroundTimes.filterValues { it > 0L }
     }
 
     private fun calculateUsageFromStats(
@@ -206,26 +165,5 @@ object ScreenUsageHelper {
         val start = midNightCal.timeInMillis
         val end = System.currentTimeMillis()
         return fetchUsageInMs(usageStatsManager, start, end).mapValues { it.value / 1000 }
-    }
-
-    fun getDailyUsage(usageStatsManager: UsageStatsManager, packageName: String): Long {
-        val cal = Calendar.getInstance()
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-        val startOfDay = cal.timeInMillis
-        val now = System.currentTimeMillis()
-
-        return fetchUsageInMs(usageStatsManager, startOfDay, now, packageName)[packageName] ?: 0L
-    }
-
-    fun getTodayUsageMap(usageStatsManager: UsageStatsManager): Map<String, Long> {
-        val cal = Calendar.getInstance()
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-        return fetchUsageInMs(usageStatsManager, cal.timeInMillis, System.currentTimeMillis())
     }
 }
