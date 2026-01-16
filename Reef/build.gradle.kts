@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -38,6 +39,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlin.compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
     }
@@ -51,6 +53,7 @@ android {
     buildToolsVersion = "36.1.0"
     ndkVersion = "29.0.14033849 rc4"
     compileSdkMinor = 1
+
 }
 
 dependencies {

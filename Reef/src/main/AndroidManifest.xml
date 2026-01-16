@@ -94,49 +94,15 @@
             </intent-filter>
         </receiver>
 
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="${applicationId}.androidx-startup"
-            android:exported="false"
-            tools:node="merge">
-            <meta-data
-                android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup"
-                tools:node="remove" />
-        </provider>
+<!--        <provider-->
+<!--            android:name="androidx.startup.InitializationProvider"-->
+<!--            android:authorities="${applicationId}.androidx-startup"-->
+<!--            android:exported="false"-->
+<!--            tools:node="merge">-->
+<!--            <meta-data-->
+<!--                android:name="androidx.work.WorkManagerInitializer"-->
+<!--                android:value="androidx.startup"-->
+<!--                tools:node="remove" />-->
+<!--        </provider>-->
     </application>
 </manifest>
-
-    <!--
-    Marked routine ac28f5f5-35bd-47a1-9713-92479d0a2914 as active, start time: 1767810600000
-    2026-01-08 21:44:51.283 13948-13948 RoutineScheduler        dev.pranav.reef                      D  Scheduled stop deactivation with WorkManager for Thu Jan 08 23:59:00 GMT+05:30 2026
-    2026-01-08 21:44:51.283 13948-13948 RoutineExecutor         dev.pranav.reef                      D  Activating routine: stop
-    2026-01-08 21:44:51.283 13948-13948 RoutineLimits           dev.pranav.reef                      D  Setting routine limits for routine: ac28f5f5-35bd-47a1-9713-92479d0a2914
-    2026-01-08 21:44:51.283 13948-13948 RoutineLimits           dev.pranav.reef                      D  Set limit for com.instafel.android: 0m (0ms)
-    2026-01-08 21:44:51.283 13948-13948 RoutineLimits           dev.pranav.reef                      D  Set limit for com.instagram.android: 0m (0ms)
-    2026-01-08 21:44:51.283 13948-13948 RoutineLimits           dev.pranav.reef                      D  Marked routine ac28f5f5-35bd-47a1-9713-92479d0a2914 as active, start time: 1767810600000
-    2026-01-08 21:44:51.286 13948-13948 RoutineScheduler        dev.pranav.reef                      D  Scheduled stop deactivation with WorkManager for Thu Jan 08 23:59:00 GMT+05:30 2026
-    2026-01-08 21:44:51.299 13948-13999 WM-SystemJobScheduler   dev.pranav.reef                      D  Scheduling work ID 538c7065-17aa-42e9-a56a-8e7ff9a765a2Job ID 41
-    2026-01-08 21:44:51.303 16164-16164 BlockerService          dev.pranav.reef                      D  dev.pranav.reef, true, false
-    2026-01-08 21:44:51.304 13948-14006 WM-Processor            dev.pranav.reef                      D  Processor cancelling 538c7065-17aa-42e9-a56a-8e7ff9a765a2
-    2026-01-08 21:44:51.304 13948-14006 WM-Processor            dev.pranav.reef                      D  WorkerWrapper could not be found for 538c7065-17aa-42e9-a56a-8e7ff9a765a2
-    2026-01-08 21:44:51.304 16164-16164 BlockerService          dev.pranav.reef                      D  dev.pranav.reef, true, false
-    2026-01-08 21:44:51.305 16164-16164 BlockerService          dev.pranav.reef                      D  dev.pranav.reef, true, false
-    2026-01-08 21:44:51.306 16164-16164 BlockerService          dev.pranav.reef                      D  dev.pranav.reef, true, false
-    2026-01-08 21:44:51.308 13948-14006 WM-GreedyScheduler      dev.pranav.reef                      D  Cancelling work ID 538c7065-17aa-42e9-a56a-8e7ff9a765a2
-    2026-01-08 21:44:51.314 13948-14006 WM-SystemJobScheduler   dev.pranav.reef                      D  Scheduling work ID 7b302f38-bda8-4675-9763-10515456b226Job ID 42
-    2026-01-08 21:44:51.402 16164-16164 BlockerService          dev.pranav.reef                      D  dev.pranav.reef, true, false
-    2026-01-08 21:44:51.404 16164-16164 BlockerService          dev.pranav.reef                      D  dev.pranav.reef, true, false
-    2026-01-08 21:44:51.497  3728-3728  NotifAttentionHelper    system_server                        E  Muting recently noisy 0|dev.pranav.reef|100|null|10871
-    2026-01-08 21:44:51.514 16164-16164 BlockerService          dev.pranav.reef                      D  dev.pranav.reef, true, false
-    2026-01-08 21:44:51.515 16164-16164 BlockerService          dev.pranav.reef                      D  dev.pranav.reef, true, false
-    2026-01-08 21:44:51.527 16164-16164 BlockerService          dev.pranav.reef                      D  com.android.systemui, true, false
-    2026-01-08 21:44:51.611 16164-16164 BlockerService          dev.pranav.reef                      D  dev.pranav.reef, true, false
-    2026-01-08 21:44:51.611 16164-16164 BlockerService          dev.pranav.reef                      D  dev.pranav.reef, true, false
-    2026-01-08 21:45:09.681 16164-16164 BlockerService          dev.pranav.reef                      D  com.instafel.android, false, false
-    2026-01-08 21:45:09.867 16164-16164 BlockerService          dev.pranav.reef                      D  com.instafel.android, false, false
-    2026-01-08 21:45:09.928 16164-16164 BlockerService          dev.pranav.reef                      D  com.instafel.android, false, false
-    2026-01-08 21:45:34.714 16164-16164 BlockerService          dev.pranav.reef                      D  com.instafel.android, false, false
-    2026-01-08 21:45:34.834 16164-16164 BlockerService          dev.pranav.reef                      D  com.instafel.android, false, false
-    2026-01-08 21:45:34.924 16164-16164 BlockerService          dev.pranav.reef                      D  com.instafel.android, false, false
-    -->

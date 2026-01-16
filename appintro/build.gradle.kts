@@ -1,6 +1,9 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -34,6 +37,10 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    kotlin.compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
 }
 
