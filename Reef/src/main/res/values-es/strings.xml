@@ -25,6 +25,10 @@
 
     <string name="whitelist_apps">Apps permitidas</string>
     <string name="whitelist_apps_desc">Selecciona apps para excluir del modo concentración</string>
+    <plurals name="whitelisted_apps">
+        <item quantity="one">%1$s app permitida</item>
+        <item quantity="other">%1$s apps permitidas</item>
+    </plurals>
 
     <string name="set_limit">Establecer límite</string>
     <string name="remove_limit">Eliminar límite</string>
@@ -198,11 +202,11 @@
     <string name="hours">Horas</string>
     <string name="minutes">Minutos</string>
     <string name="strict_mode">Modo Estricto</string>
-    <string name="flexible_mode">Modo Flexible</string>
+    <string name="flexible_mode">Modo flexible</string>
     <string name="no_pausing_allowed">No se permite pausar</string>
     <string name="pause_resume_anytime">Pausa y reanuda cuando quieras</string>
     <string name="start">Iniciar</string>
-    <string name="focus_label">Foco</string>
+    <string name="focus_label">Concentración</string>
     <string name="short_break_label">Descanso corto</string>
     <string name="long_break_label">Descanso largo</string>
     <string name="cycles_label">Ciclos</string>
@@ -263,7 +267,7 @@
 
     <string name="notification_pause">Pausar</string>
     <string name="notification_resume">Reanudar</string>
-    <string name="focus_session_complete">Sesión de foco completada</string>
+    <string name="focus_session_complete">Sesión de concentración completada</string>
     <string name="focus_session_complete_message">¡Bien hecho! Has completado tu sesión de concentración.</string>
     <string name="tap_to_start_next_phase">Toca Reanudar para empezar</string>
 
@@ -291,9 +295,23 @@
     <string name="reminder_channel_description">Recordatorios sobre el uso de pantalla.</string>
     <string name="reminder_channel_name">Recordatorios de tiempo en pantalla</string>
 
-    <string name="focus_mode_channel_name">Modo Concentración</string>
-    <string name="focus_mode_channel_description">Notificaciones relacionadas con sesiones de foco.</string>
+    <string name="focus_mode_channel_name">Modo concentración</string>
+    <string name="focus_mode_channel_description">Notificaciones relacionadas con sesiones de concentración.</string>
 
     <string name="break_ended_title">¡Se acabó el descanso!</string>
-    <string name="break_ended_message">Hora de volver al trabajo. Tu sesión de foco empieza ahora.</string>
+    <string name="break_ended_message">Hora de volver al trabajo. Tu sesión de concentración empieza ahora.</string>
+    <string name="slide">Deslizar</string>
+    <string name="release">Soltar</string>
+    <string name="slide_description">Desliza para comenzar una\nsesión de trabajo</string>
+    <string name="sample_routine">Por ejemplo, configura la rutina \"Trabajo\" a las 14:00</string>
+
+    <string name="start_focus_session">Comienza una sesión de concentración</string>
+    <string name="paused_focus_session">En pausa • %1$s</string>
+    <string name="in_progress_focus_session">En progreso • %1$s</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_stats">Estadísticas</string>
+    <string name="nav_focus">Concentración</string>
+    <string name="nav_settings">Ajustes</string>
 </resources>
