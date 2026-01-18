@@ -275,8 +275,8 @@ class AppUsageViewModel(
 
         repeat(7) { i ->
             val cal = Calendar.getInstance()
-            val daysAgo = (_weekOffset.intValue * 7) + (6 - i)
-            cal.add(Calendar.DAY_OF_YEAR, -daysAgo)
+            val daysAgo = (_weekOffset.intValue - 1) * 7 + i + 1
+            cal.add(Calendar.DAY_OF_YEAR, daysAgo)
 
             cal.set(Calendar.HOUR_OF_DAY, 0)
             cal.set(Calendar.MINUTE, 0)
@@ -316,8 +316,8 @@ class AppUsageViewModel(
     private fun checkPreviousWeekData() {
         viewModelScope.launch(Dispatchers.IO) {
             val calendar = Calendar.getInstance()
-            val daysToSubtract = ((_weekOffset.intValue - 1) * 7) + 6
-            calendar.add(Calendar.DAY_OF_YEAR, -daysToSubtract)
+            val daysToSubtract = (_weekOffset.intValue - 1) * 7
+            calendar.add(Calendar.DAY_OF_YEAR, daysToSubtract)
 
             val maxWeeksBack = 13
             if (_weekOffset.intValue <= -maxWeeksBack) {
@@ -326,28 +326,29 @@ class AppUsageViewModel(
             }
 
             var hasData = false
-            repeat(7) {
+            for (i in 0 until 7) {
                 val start = calendar.clone() as Calendar
-                start.set(Calendar.HOUR_OF_DAY, 0); start.set(Calendar.MINUTE, 0); start.set(
-                Calendar.SECOND,
-                0
-            ); start.set(Calendar.MILLISECOND, 0)
+                start.set(Calendar.HOUR_OF_DAY, 0)
+                start.set(Calendar.MINUTE, 0)
+                start.set(Calendar.SECOND,0)
+                start.set(Calendar.MILLISECOND, 0)
+
                 val end = start.clone() as Calendar
-                end.set(Calendar.HOUR_OF_DAY, 23); end.set(
-                Calendar.MINUTE,
-                59
-            ); end.set(Calendar.SECOND, 59); end.set(Calendar.MILLISECOND, 999)
+                end.set(Calendar.HOUR_OF_DAY, 23)
+                end.set(Calendar.MINUTE,59)
+                end.set(Calendar.SECOND, 59)
+                end.set(Calendar.MILLISECOND, 999)
 
                 if (ScreenUsageHelper.calculateUsage(
                         context, usageStatsManager,
                         start.timeInMillis,
                         end.timeInMillis
-                    ).values.sum() > 0
+                    ).values.any { it > 0}
                 ) {
                     hasData = true
-                    return@repeat
+                    break
                 }
-                calendar.add(Calendar.DAY_OF_YEAR, 1)
+                calendar.add(Calendar.DAY_OF_YEAR, -1)
             }
 
             withContext(Dispatchers.Main) { _canGoPrevious.value = hasData }

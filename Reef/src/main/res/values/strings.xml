@@ -23,6 +23,11 @@
 
     <string name="whitelist_apps">Whitelist apps</string>
     <string name="whitelist_apps_desc">Select apps to exclude from focus mode</string>
+    <plurals name="whitelisted_apps">
+        <item quantity="one">%1$s app allowed</item>
+        <item quantity="other">%1$s apps allowed</item>
+    </plurals>
+
 
     <string name="set_limit">Set Limit</string>
     <string name="remove_limit">Remove Limit</string>
@@ -308,4 +313,20 @@
     <!-- Break Alert strings -->
     <string name="break_ended_title">Break Over!</string>
     <string name="break_ended_message">Time to get back to work. Your focus session is starting now.</string>
+
+    <string name="slide">Slide</string>
+    <string name="release">Release</string>
+    <string name="slide_description">Slide to start a deep work\nsession</string>
+    <string name="sample_routine">"For example, schedule \"Deep Work\" routine at 2:00 PM"</string>
+
+    <string name="start_focus_session">Start a focus session</string>
+    <string name="paused_focus_session">Paused • %1$s</string>
+    <string name="in_progress_focus_session">In progress • %1$s</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_focus">Focus</string>
+    <string name="nav_settings">Settings</string>
+
 </resources>

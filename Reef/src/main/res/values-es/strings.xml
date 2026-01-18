@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reef</string>
+    <string name="accessibility_service_name">Servicio de Reef</string>
+    <string name="app_description">Reef es una aplicación de código abierto de productividad diseñada para ayudarte a reducir el tiempo de pantalla y mejorar tu productividad.</string>
+    <string name="accessibility_service">Servicio de accesibilidad</string>
+    <string name="accessibility_service_description">Reef usa el servicio de accesibilidad para bloquear distracciones y ayudarte a mantener la concentración.</string>
+    <string name="accessibility_service_app_limit">Reef usa el servicio de accesiblidad para forzar los límites de tiempo de pantalla por aplicación.</string>
+    <string name="agree">Estoy de acuerdo</string>
+    <string name="time_remaining">Tiempo restante: %1$s</string>
+    <string name="focus_mode">Modo concentración</string>
+    <string name="app_usage">Uso de aplicaciones</string>
+    <string name="app_usage_desc">Monitoriza el tiempo de pantalla</string>
+    <string name="usage_access">Acceso al uso</string>
+    <string name="usage_access_description">Reef usa el acceso al uso para monitorizar el uso de aplicaciones. No se recopila ni se comparte ningún tipo de información.</string>
+    <string name="app_usage_statistics">Estadísticas de uso de aplicaciones</string>
+    <string name="app_usage_statistics_description">Reef usa el permiso de acceso al uso para ayudarte a controlar el tiempo en pantalla. Ningún dato será envíado desde tu teléfono.</string>
+
+    <string name="notification_permission">Permiso de notificaciones</string>
+    <string name="notification_permission_description">Por favor, concede el permiso de notificaciones para continuar.</string>
+    <string name="battery_optimization_exception">Excepción de optimización de batería</string>
+    <string name="battery_optimization_exception_description">Por favor, concede las excepciones de optimización de batería para continuar.</string>
+    <string name="exact_alarm_permission">Programar alarmas exactas</string>
+    <string name="exact_alarm_permission_description">Permite a Reef programar alarmas exactas para las rutinas. Esto asegura que el bloqueo de apps empiece y termine a la hora exacta que configures.</string>
+
+    <string name="whitelist_apps">Apps permitidas</string>
+    <string name="whitelist_apps_desc">Selecciona apps para excluir del modo concentración</string>
+    <plurals name="whitelisted_apps">
+        <item quantity="one">%1$s app permitida</item>
+        <item quantity="other">%1$s apps permitidas</item>
+    </plurals>
+
+    <string name="set_limit">Establecer límite</string>
+    <string name="remove_limit">Eliminar límite</string>
+    <string name="daily_usage_limit">Límite de uso diario</string>
+    <string name="app_icon">Icono de aplicación</string>
+    <string name="avg_daily">Promedio diario</string>
+    <string name="peak_usage">Pico de uso</string>
+    <string name="weekly_overview">Semanal</string>
+
+    <string name="routines">Rutinas</string>
+    <string name="routines_desc">Programar sesiones de concentración</string>
+
+    <string name="no_routines">Sin rutinas</string>
+    <string name="routine_icon">Icono de rutina</string>
+    <string name="active_status">Activo</string>
+    <string name="routine_name">Nombre de rutina</string>
+    <string name="schedule">Horario</string>
+    <string name="daily">Diario</string>
+    <string name="weekly">Semanal</string>
+    <string name="manual">Manual</string>
+    <string name="start_time">Hora de inicio:</string>
+    <string name="end_time">Hora de fin:</string>
+    <string name="select_days">Selecciona los días:</string>
+    <string name="monday">Lunes</string>
+    <string name="tuesday">Martes</string>
+    <string name="wednesday">Miércoles</string>
+    <string name="thursday">Jueves</string>
+    <string name="friday">Viernes</string>
+    <string name="saturday">Sábado</string>
+    <string name="sunday">Domingo</string>
+    <string name="app_limits">Límites de aplicaciones</string>
+    <string name="add_app">Añadir app</string>
+    <string name="no_app_limits_desc">No hay límites añadidos. Toca \'Añadir app\' para limitar apps específicas</string>
+    <string name="save_routine">Guardar rutina</string>
+    <string name="delete_routine">Eliminar rutina</string>
+    <string name="routine_card_title">Automatiza tu bienestar digital</string>
+    <string name="routine_card_desc">Crea rutinas inteligentes para gestionar límites automáticamente en días y horas específicos</string>
+    <string name="no_routines_yet">Aún no hay rutinas</string>
+    <string name="create_routine_text">Crea tu primera rutina para automatizar límites de uso de aplicaciones según tu horario</string>
+    <string name="create_routine">Crear rutina</string>
+    <string name="about">Acerca de</string>
+    <string name="back">Atrás</string>
+    <string name="next">Siguiente</string>
+    <string name="get_started">Empezar</string>
+    <string name="manage_focus">Gestiona tu enfoque</string>
+    <string name="settings">Ajustes</string>
+
+    <string name="join_community">Unirse a la comunidad</string>
+    <string name="join_community_desc">Únete a nuestro Discord para conectar con otros usuarios, dar feedback y estar al día de las novedades.</string>
+    <string name="join_discord">Unirse a Discord</string>
+    <string name="maybe_later">Quizás luego</string>
+    <string name="support_development">Apoyar el desarrollo</string>
+    <string name="support_development_desc">Si te gusta Reef, considera apoyar su desarrollo. Tus contribuciones ayudan a mantener la app gratuita y de código abierto.</string>
+    <string name="any_amount_helps">Cualquier aporte ayuda a mantener vivo y mejorando este proyecto.</string>
+
+    <string name="timer_section">Temporizador</string>
+    <string name="enable_dnd">Activar modo \'No Molestar\' al concentrarse</string>
+    <string name="dnd_description">Silencia notificaciones durante el modo concentración</string>
+    <string name="pomodoro">Pomodoro</string>
+    <string name="pomodoro_subtitle">Configurar sesiones y descansos</string>
+    <string name="app_blocking">Bloqueo de aplicaciones</string>
+    <string name="app_blocking_subtitle">Configurar apps bloqueadas</string>
+    <string name="about_subtitle">Info. de la app y créditos</string>
+    <string name="pomodoro_settings_title">Ajustes Pomodoro</string>
+    <string name="pomodoro_settings">Ajustes Pomodoro</string>
+    <string name="durations_section">Duraciones</string>
+    <string name="durations">Duraciones</string>
+    <string name="focus_duration">Duración de la sesión de concentración</string>
+    <string name="short_break">Descanso corto</string>
+    <string name="short_break_duration">Duración del descanso corto</string>
+    <string name="long_break">Descanso largo</string>
+    <string name="long_break_duration">Duración del descanso largo</string>
+    <string name="cycles_before_long_break">Ciclos antes del descanso largo</string>
+    <string name="min_suffix">min.</string>
+    <string name="cycles_suffix">ciclos</string>
+    <string name="notifications_section">Notificaciones</string>
+    <string name="sound">Sonido</string>
+    <string name="sound_description">Sonar al cambiar de fase</string>
+    <string name="choose_sound">Elegir sonido</string>
+    <string name="choose_sound_description">Seleccionar tono de notificación</string>
+    <string name="vibration">Vibración</string>
+    <string name="vibration_description">Vibrar al cambiar de fase</string>
+    <string name="select_transition_sound">Elegir sonido de transición</string>
+    <string name="automation">Automatización</string>
+    <string name="auto_start_breaks">Iniciar descansos de manera automática</string>
+    <string name="auto_start_breaks_description">Iniciar descanso al terminar la sesión de concentración</string>
+    <string name="auto_start_focus">Iniciar automáticamente la sesión de concentración</string>
+    <string name="auto_start_focus_description">Iniciar sesión de concentración al terminar el descanso</string>
+    <string name="transition_sound">Sonido de transición</string>
+    <string name="transition_sound_description">Reproducir sonido al cambiar de fase</string>
+    <string name="transition_vibration">Vibración al transicionar</string>
+    <string name="transition_vibration_description">Vibrar al cambiar de fase</string>
+    <string name="select_sound">Seleccionar sonido</string>
+    <string name="select_sound_description">Elige un sonido de notificación</string>
+
+    <string name="notifications">Notificaciones</string>
+    <string name="notifications_subtitle">Configurar alertas y recordatorios</string>
+    <string name="notifications_settings_title">Ajustes de notificación</string>
+    <string name="focus_reminders">Recordatorios de concentración</string>
+    <string name="focus_reminders_description">Recibir aviso para iniciar sesión de concentración</string>
+    <string name="break_alerts">Alertas de descanso</string>
+    <string name="break_alerts_description">Avisar cuando toque descansar</string>
+    <string name="daily_summary">Resumen diario</string>
+    <string name="daily_summary_description">Recibir informe de tiempo en pantalla a las 21:00</string>
+    <string name="daily_summary_title">Tiempo de pantalla diario</string>
+    <string name="daily_summary_message">Hoy usaste tu teléfono %1$s</string>
+    <string name="limit_warnings">Avisos de límite</string>
+    <string name="limit_warnings_description">Avisar al acercarse al límite de uso una app</string>
+    <string name="general_section">General</string>
+
+    <string name="edit_routine">Editar rutina</string>
+    <string name="delete_routine_confirmation">¿Seguro que quieres eliminar \'%1$s\'? No se puede deshacer.</string>
+    <string name="delete">Eliminar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="reset">Restablecer</string>
+    <string name="remove_app_limit">Quitar límite de app</string>
+    <string name="ok">OK</string>
+    <string name="select_app">Seleccionar app</string>
+    <string name="search_apps">Buscar aplicación</string>
+    <string name="no_apps_found">No se encontraron apps</string>
+    <string name="no_apps_match">Ninguna app coincide con tu búsqueda</string>
+    <string name="set_limit_for">Poner límite a %1$s</string>
+
+    <plurals name="minutes_label">
+        <item quantity="one">%d minuto</item>
+        <item quantity="other">%d minutos</item>
+    </plurals>
+
+    <plurals name="hours_label">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
+
+    <string name="enter_routine_name_error">Introduce un nombre para la rutina</string>
+
+    <string name="activate_routine">Activar rutina</string>
+    <string name="activate_routine_confirmation">¿Quieres activar \'%1$s\' ahora?</string>
+    <string name="no_app_limits_applied">No se aplicaron límites de apps</string>
+
+    <plurals name="app_limits_applied">
+        <item quantity="one">%1$d límite aplicado</item>
+        <item quantity="other">%1$d límites aplicados</item>
+    </plurals>
+
+    <string name="routine_activated_toast">¡Rutina \'%1$s\' activada! %2$s</string>
+    <string name="activate">Activar</string>
+    <string name="edit">Editar</string>
+    <string name="no_app_limits_set">Sin límites de apps</string>
+
+    <string name="unknown_schedule">Horario desconocido</string>
+    <string name="schedule_from_to">\ de %1$s a %2$s</string>
+    <string name="schedule_at"> a las %1$s</string>
+    <string name="every_day">Todos los días</string>
+    <string name="weekdays">Entre semana</string>
+    <string name="weekends">Fines de semana</string>
+    <string name="manual_activation">Activación manual</string>
+    <string name="min_short_suffix">m</string>
+    <string name="minutes_short_format">%1$d m</string>
+    <string name="hours_short_format">%1$d h</string>
+    <string name="hour_min_short_suffix">%1$d h %2$d m</string>
+    <string name="less_than_one_minute">&lt; 1 m</string>
+    <string name="zero_time">0</string>
+
+    <string name="focus_mode_title">Modo concentración</string>
+    <string name="timer_tab">Temporizador</string>
+    <string name="pomodoro_tab">Pomodoro</string>
+    <string name="increase_hours">Aumentar horas</string>
+    <string name="increase_minutes">Aumentar minutos</string>
+    <string name="decrease_hours">Reducir horas</string>
+    <string name="decrease_minutes">Reducir minutos</string>
+    <string name="hours">Horas</string>
+    <string name="minutes">Minutos</string>
+    <string name="strict_mode">Modo Estricto</string>
+    <string name="flexible_mode">Modo flexible</string>
+    <string name="no_pausing_allowed">No se permite pausar</string>
+    <string name="pause_resume_anytime">Pausa y reanuda cuando quieras</string>
+    <string name="start">Iniciar</string>
+    <string name="focus_label">Concentración</string>
+    <string name="short_break_label">Descanso corto</string>
+    <string name="long_break_label">Descanso largo</string>
+    <string name="cycles_label">Ciclos</string>
+    <string name="start_pomodoro">Iniciar Pomodoro</string>
+    <string name="decrease">Reducir</string>
+    <string name="increase">Aumentar</string>
+    <string name="cycle_count">Ciclo %1$d/%2$d</string>
+    <string name="paused_status">Pausado</string>
+    <string name="take_a_break_message">Tómate un descanso, las aplicaciones han sido desbloqueadas</string>
+    <string name="no_interruptions_message">Sin interrupciones</string>
+    <string name="resume">Reanudar</string>
+    <string name="pause">Pausar</string>
+
+    <string name="set_daily_usage_limit">Límite de uso diario</string>
+    <string name="usage_history">Historial de uso</string>
+    <string name="min_day_average">%1$d min/día de media</string>
+
+    <string name="version_label">Versión %1$s</string>
+    <string name="about_description">App de productividad de código abierto para reducir el tiempo en pantalla y mejorar tu bienestar digital</string>
+    <string name="developer_label">Desarrollador</string>
+    <string name="developer_description">Desarrollador Open Source enfocado en herramientas de productividad y seguridad.</string>
+    <string name="view_github_profile">Ver perfil de GitHub</string>
+    <string name="support_description_short">Ayuda a mantener y crecer este proyecto</string>
+    <string name="donate">Donar</string>
+    <string name="donate_subtitle">Mantén Reef gratis y sin anuncios</string>
+    <string name="donate_dialog_title">Apoyar desarrollo</string>
+    <string name="donate_dialog_message">Reef es totalmente gratis, sin anuncios, rastreo ni costes ocultos. Si te resulta útil, considera una pequeña donación. Tu apoyo lo es todo y mantiene vivo el proyecto. ¡Gracias!</string>
+    <string name="donate_later">Quizás luego</string>
+    <string name="donate_now">Donar</string>
+    <string name="links_title">Enlaces</string>
+    <string name="discord_community">Comunidad de Discord</string>
+    <string name="source_code">Código fuente</string>
+    <string name="report_issue">Reportar problema</string>
+    <string name="foss_label">Software Libre y de Código Abierto</string>
+
+    <string name="apps_tracked_one">1 app rastreada</string>
+    <string name="apps_tracked_multiple">%1$d apps rastreadas</string>
+    <string name="sort">Ordenar</string>
+    <string name="sort_by_time">Por tiempo</string>
+    <string name="sort_az">Por nombre (A–Z)</string>
+    <string name="fetching_usage_data">Cargando datos de uso…</string>
+    <string name="show_all_apps">Ver las %1$d apps</string>
+    <string name="today">Hoy</string>
+    <string name="last_7_days">Últimos 7 días</string>
+    <string name="last_7_days_option">7 Días</string>
+    <string name="previous_week">Semana anterior</string>
+    <string name="next_week">Semana siguiente</string>
+    <string name="percentage_format">%1$d%%</string>
+
+    <string name="whitelist_apps_title">Apps permitidas</string>
+    <string name="accessibility_error_toast">No puedes usar Reef sin activar el servicio de accesibilidad</string>
+    <string name="required_permissions">Permisos necesarios</string>
+    <string name="permissions_description">Para que Reef funcione correctamente, concede los siguientes permisos.</string>
+    <string name="granted">Concedido</string>
+    <string name="grant">Conceder</string>
+
+    <string name="stop">Parar</string>
+
+    <string name="notification_pause">Pausar</string>
+    <string name="notification_resume">Reanudar</string>
+    <string name="focus_session_complete">Sesión de concentración completada</string>
+    <string name="focus_session_complete_message">¡Bien hecho! Has completado tu sesión de concentración.</string>
+    <string name="tap_to_start_next_phase">Toca Reanudar para empezar</string>
+
+    <string name="app_blocked">App bloqueada</string>
+    <string name="blocked_by_routine">%1$s está bloqueada por tu rutina activa</string>
+    <string name="reached_limit">%1$s ha alcanzado su límite</string>
+    <string name="distraction_blocked">Distracción bloqueada</string>
+    <string name="you_were_using">Estabas usando %1$s</string>
+
+    <string name="blocker_channel_name">Bloqueador de contenido</string>
+    <string name="blocker_channel_description">Muestra recordatorios de tiempo y apps bloqueadas.</string>
+    <string name="no_usage_data">Sin datos de uso</string>
+    <string name="routine_activated">Rutina activada</string>
+    <string name="routine_deactivated">Rutina desactivada</string>
+    <string name="routine_has_ended">%1$s ha terminado</string>
+    <string name="time_limit_reminder">Recordatorio de límite</string>
+    <plurals name="app_will_be_blocked_in">
+        <item quantity="one">%1$s se bloqueará en %2$d minuto</item>
+        <item quantity="other">%1$s se bloqueará en %2$d minutos</item>
+    </plurals>
+
+    <string name="routine_channel_name">Alertas de rutina</string>
+    <string name="routine_channel_description">Notificaciones sobre activación y fin de rutinas.</string>
+
+    <string name="reminder_channel_description">Recordatorios sobre el uso de pantalla.</string>
+    <string name="reminder_channel_name">Recordatorios de tiempo en pantalla</string>
+
+    <string name="focus_mode_channel_name">Modo concentración</string>
+    <string name="focus_mode_channel_description">Notificaciones relacionadas con sesiones de concentración.</string>
+
+    <string name="break_ended_title">¡Se acabó el descanso!</string>
+    <string name="break_ended_message">Hora de volver al trabajo. Tu sesión de concentración empieza ahora.</string>
+    <string name="slide">Deslizar</string>
+    <string name="release">Soltar</string>
+    <string name="slide_description">Desliza para comenzar una\nsesión de trabajo</string>
+    <string name="sample_routine">Por ejemplo, configura la rutina \"Trabajo\" a las 14:00</string>
+
+    <string name="start_focus_session">Comienza una sesión de concentración</string>
+    <string name="paused_focus_session">En pausa • %1$s</string>
+    <string name="in_progress_focus_session">En progreso • %1$s</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_stats">Estadísticas</string>
+    <string name="nav_focus">Concentración</string>
+    <string name="nav_settings">Ajustes</string>
+</resources>
