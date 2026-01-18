@@ -667,6 +667,7 @@ private fun AppSelectorDialog(
                 Column {
                     listOf(
                         pluralStringResource(R.plurals.minutes_label, 0, 0) to 0,
+                        pluralStringResource(R.plurals.minutes_label, 5, 5) to 5,
                         pluralStringResource(R.plurals.minutes_label, 15, 15) to 15,
                         pluralStringResource(R.plurals.minutes_label, 30, 30) to 30,
                         pluralStringResource(R.plurals.hours_label, 1, 1) to 60,
