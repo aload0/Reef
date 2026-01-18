@@ -264,17 +264,17 @@ class MainActivity: ComponentActivity() {
                                     R.string.hour_min_short_suffix,
                                     hours,
                                     minutes
-                                ) + " today"
+                                ) + " " + getString(R.string.today)
 
                                 hours > 0 -> getString(
                                     R.string.hours_short_format,
                                     hours
-                                ) + " today"
+                                ) + " " + getString(R.string.today)
 
                                 minutes > 0 -> getString(
                                     R.string.minutes_short_format,
                                     minutes
-                                ) + " today"
+                                ) + " " + getString(R.string.today)
 
                                 else -> getString(R.string.less_than_one_minute)
                             }
@@ -761,25 +761,25 @@ private fun ReefBottomNavBar(
         ) {
             BottomNavItem(
                 icon = Icons.Outlined.Home,
-                label = "Home",
+                label = stringResource(R.string.nav_home),
                 selected = selectedItem == 0,
                 onClick = { onItemSelected(0) }
             )
             BottomNavItem(
                 icon = Icons.Rounded.BarChart,
-                label = "Stats",
+                label = stringResource(R.string.nav_stats),
                 selected = selectedItem == 1,
                 onClick = { onItemSelected(1) }
             )
             BottomNavItem(
                 icon = Icons.Rounded.SelfImprovement,
-                label = "Focus",
+                label = stringResource(R.string.nav_focus),
                 selected = selectedItem == 2,
                 onClick = { onItemSelected(2) }
             )
             BottomNavItem(
                 icon = Icons.Outlined.Settings,
-                label = "Settings",
+                label = stringResource(R.string.nav_settings),
                 selected = selectedItem == 3,
                 onClick = { onItemSelected(3) }
             )
