@@ -60,43 +60,23 @@ object ScreenUsageHelper {
         runCatching {
             val lookBackStart = start - (2 * 60 * 60 * 1000)
 
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-                usageEvents = usageStatsManager.queryEvents(lookBackStart, start)
-            } else {
-                val query = UsageEventsQuery.Builder(
-                    lookBackStart,
-                    start,
-                ).setEventTypes(*intArrayOf(UsageEvents.Event.ACTIVITY_RESUMED))
-
-                if (targetPackage != null) {
-                    query.setPackageNames(targetPackage)
-                }
-
-                usageEvents = usageStatsManager.queryEvents(query.build())!!
-            }
+            usageEvents = queryEvents(usageStatsManager, lookBackStart, start, targetPackage)
 
             while (usageEvents.hasNextEvent() && usageEvents.getNextEvent(event)) {
-                if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
-                    packageStartTimes[event.packageName] = event.timeStamp
+                when (event.eventType) {
+                    UsageEvents.Event.ACTIVITY_RESUMED -> {
+                        packageStartTimes[event.packageName] = start
+                    }
+
+                    UsageEvents.Event.ACTIVITY_PAUSED -> {
+                        packageStartTimes.remove(event.packageName)
+                    }
                 }
             }
         }
 
         runCatching {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-                usageEvents = usageStatsManager.queryEvents(start, end)
-            } else {
-                val query = UsageEventsQuery.Builder(
-                    start,
-                    end,
-                ).setEventTypes(*intArrayOf(UsageEvents.Event.ACTIVITY_RESUMED, UsageEvents.Event.ACTIVITY_PAUSED))
-
-                if (targetPackage != null) {
-                    query.setPackageNames(targetPackage)
-                }
-
-                usageEvents = usageStatsManager.queryEvents(query.build())!!
-            }
+            usageEvents = queryEvents(usageStatsManager, start, end)
 
             while (usageEvents.hasNextEvent() && usageEvents.getNextEvent(event)) {
                 val packageName = event.packageName
@@ -105,6 +85,10 @@ object ScreenUsageHelper {
                 when (event.eventType) {
                     UsageEvents.Event.ACTIVITY_RESUMED -> {
                         packageStartTimes[packageName] = timestamp
+                        if (packageStartTimes.count() == 3) {
+                            val noisyPackage = packageStartTimes.minByOrNull { it.value }
+                            packageStartTimes.remove(noisyPackage!!.key)
+                        }
                     }
 
                     UsageEvents.Event.ACTIVITY_PAUSED -> {
@@ -117,6 +101,16 @@ object ScreenUsageHelper {
                     }
                 }
             }
+
+            if (packageStartTimes.isNotEmpty()) {
+                val latestPackage = packageStartTimes.maxByOrNull { it.value }
+                packageStartTimes[latestPackage!!.key]?.let { startTime ->
+                    val duration = end - startTime
+                    packageForegroundTimes[latestPackage.key] =
+                        packageForegroundTimes.getOrDefault(targetPackage, 0L) + duration
+                }
+            }
+
         }
 
         return packageForegroundTimes.filterValues { it > 0L }
@@ -165,5 +159,25 @@ object ScreenUsageHelper {
         val start = midNightCal.timeInMillis
         val end = System.currentTimeMillis()
         return fetchUsageInMs(usageStatsManager, start, end).mapValues { it.value / 1000 }
+    }
+
+    private fun queryEvents(usageStatsManager: UsageStatsManager, start: Long, end: Long, targetPackage: String? = null) : UsageEvents {
+        var usageEvents: UsageEvents
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            usageEvents = usageStatsManager.queryEvents(start, end)
+        } else {
+            val query = UsageEventsQuery.Builder(
+                start,
+                end,
+            ).setEventTypes(*intArrayOf(UsageEvents.Event.ACTIVITY_RESUMED, UsageEvents.Event.ACTIVITY_PAUSED))
+
+            if (targetPackage != null) {
+                query.setPackageNames(targetPackage)
+            }
+
+            usageEvents = usageStatsManager.queryEvents(query.build())!!
+        }
+
+        return usageEvents
     }
 }
