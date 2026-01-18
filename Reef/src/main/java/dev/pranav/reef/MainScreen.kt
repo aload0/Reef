@@ -1,5 +1,6 @@
 package dev.pranav.reef
 
+import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -105,7 +106,8 @@ fun HomeContent(
             TimeLimitsCard(
                 modifier = Modifier.weight(1f),
                 onClick = onNavigateToWhitelist,
-                whitelistedCount = whitelistedAppsCount
+                whitelistedCount = whitelistedAppsCount,
+                context = context
             )
         }
 
@@ -193,7 +195,7 @@ private fun FocusModeCard(
             Spacer(Modifier.height(24.dp))
 
             Text(
-                text = "Focus Mode",
+                text = stringResource(R.string.focus_mode),
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -204,7 +206,7 @@ private fun FocusModeCard(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Slide to start a deep work\nsession",
+                text = stringResource(R.string.slide_description),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                 lineHeight = 22.sp,
@@ -281,7 +283,7 @@ private fun FocusTogglePill(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Release",
+                        text = stringResource(R.string.release),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
                             alpha = (1f - progress).coerceIn(0.3f, 0.7f)
@@ -296,7 +298,7 @@ private fun FocusTogglePill(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Slide",
+                        text = stringResource(R.string.slide),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
                             alpha = (1f - progress).coerceIn(0.3f, 0.7f)
@@ -368,7 +370,7 @@ private fun AppUsageCard(
 
             Column {
                 Text(
-                    text = "App Usage",
+                    text = stringResource(R.string.app_usage),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -389,7 +391,8 @@ private fun AppUsageCard(
 private fun TimeLimitsCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    whitelistedCount: Int = 0
+    whitelistedCount: Int = 0,
+    context: Context,
 ) {
     Card(
         onClick = onClick,
@@ -423,7 +426,7 @@ private fun TimeLimitsCard(
 
             Column {
                 Text(
-                    text = "Whitelist",
+                    text = stringResource(R.string.whitelist_apps),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -431,7 +434,11 @@ private fun TimeLimitsCard(
                     color = MaterialTheme.colorScheme.onTertiaryContainer
                 )
                 Text(
-                    text = "$whitelistedCount apps allowed",
+                    text = context.resources.getQuantityString(
+                        R.plurals.whitelisted_apps,
+                        whitelistedCount,
+                        whitelistedCount
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
                 )
@@ -475,14 +482,14 @@ private fun RoutinesCard(onClick: () -> Unit) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Routines",
+                    text = stringResource(R.string.routines),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Scheduled: \"Deep Work\" at 2:00 PM",
+                    text = stringResource(R.string.sample_routine),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -565,7 +572,7 @@ private fun PomodoroTimerCard(
                     text = if (isActive) {
                         currentTimerState.lowercase().replaceFirstChar { it.uppercase() }
                     } else {
-                        "Pomodoro Timer"
+                        stringResource(R.string.pomodoro)
                     },
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold
@@ -574,9 +581,13 @@ private fun PomodoroTimerCard(
                 )
                 Text(
                     text = if (isActive) {
-                        if (isPaused) "Paused • $currentTimeLeft" else "In progress • $currentTimeLeft"
+                        if (isPaused) {
+                            stringResource(R.string.paused_focus_session, currentTimeLeft)
+                        } else {
+                            stringResource(R.string.in_progress_focus_session, currentTimeLeft)
+                        }
                     } else {
-                        "Start a focus session"
+                        stringResource(R.string.start_focus_session)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
