@@ -240,7 +240,7 @@ object Routines {
         val sessions = getActiveSessions()
 
         if (sessions.isEmpty()) {
-            Log.d(TAG, "getLimitMs($packageName): No active sessions")
+            //Log.d(TAG, "getLimitMs($packageName): No active sessions")
             return null
         }
 
