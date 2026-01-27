@@ -81,11 +81,12 @@ class FocusModeService: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == null) {
-            stopSelfResult(startId)
             return START_NOT_STICKY
         }
 
-        promoteToForeground()
+        if (intent.action != ACTION_PAUSE) {
+            promoteToForeground()
+        }
 
         when (intent.action) {
             ACTION_PAUSE -> pauseTimer()
