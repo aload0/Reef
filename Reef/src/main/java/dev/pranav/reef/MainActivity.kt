@@ -670,7 +670,9 @@ class MainActivity: ComponentActivity() {
                 }
             }
         }
-        startForegroundService(Intent(this, FocusModeService::class.java))
+        startForegroundService(Intent(this, FocusModeService::class.java).apply {
+            action = FocusModeService.ACTION_START
+        })
     }
 
     private fun pauseFocusMode() {
