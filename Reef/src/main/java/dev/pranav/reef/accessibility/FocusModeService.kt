@@ -295,6 +295,10 @@ class FocusModeService: Service() {
         val nextPhase = calculateNextPhase(state, config)
 
         if (nextPhase.isComplete) {
+            prefs.edit {
+                putBoolean("pomodoro_mode", false)
+                remove("pomodoro_current_cycle")
+            }
             endSession()
             return
         }
