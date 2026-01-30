@@ -270,10 +270,11 @@ class FocusModeService: Service() {
 
         if (!state.isPomodoroMode) {
             endSession()
-            return
+        } else {
+            transitionPomodoroPhase()
         }
 
-        transitionPomodoroPhase()
+
     }
 
     private fun endSession() {
@@ -341,16 +342,15 @@ class FocusModeService: Service() {
                 showBreakEndedNotification()
             }
         } else {
-            if (!shouldAutoStart) {
-                restoreDND()
-            }
+            restoreDND()
         }
 
         if (prefs.getBoolean("pomodoro_sound_enabled", true)) {
-            if (prefs.getBoolean("pomodoro_vibration_enabled", true)) {
-                AndroidUtilities.vibrate(this, 1000)
-            }
             playTransitionSound()
+        }
+
+        if (prefs.getBoolean("pomodoro_vibration_enabled", true)) {
+            AndroidUtilities.vibrate(this, 1000)
         }
 
         val notificationText = if (shouldAutoStart) {
