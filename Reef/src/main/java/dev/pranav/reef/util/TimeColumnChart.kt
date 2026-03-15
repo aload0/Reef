@@ -57,7 +57,7 @@ internal fun TimeColumnChart(
     val density = LocalDensity.current
     val primaryColor = MaterialTheme.colorScheme.primary
 
-    // Extract scrollState to a variable so it can be accessed in the pointerInput block
+    // Use a dedicated scrollState variable to track horizontal movement
     val vicoScrollState = rememberVicoScrollState(initialScroll = Scroll.Absolute.End)
 
     ProvideVicoTheme(rememberM3VicoTheme()) {
@@ -104,26 +104,24 @@ internal fun TimeColumnChart(
                                 val bottomAxisHeight = with(density) { 32.dp.toPx() }
                                 val topPadding = with(density) { 8.dp.toPx() }
                                 
-                                val availableWidth = chartWidth - startAxisWidth - endPadding
                                 val availableHeight = chartHeight - bottomAxisHeight - topPadding
 
                                 val columnWidth = with(density) { thickness.toPx() }
                                 val spacing = with(density) { columnCollectionSpacing.toPx() }
                                 val totalColumnWidth = columnWidth + spacing
 
-                                // Get current scroll offset to align click coordinate with chart content
+                                // Correcting coordinate: Add current scroll offset to the tap position relative to the chart start
                                 val scrollOffset = vicoScrollState.value
-                                
-                                // Calculate click X relative to content by adding the scroll offset
-                                val clickXWithScroll = (offset.x - startAxisWidth) + scrollOffset
+                                val relativeTapX = offset.x - startAxisWidth
+                                val absoluteX = relativeTapX + scrollOffset
                                 val clickY = offset.y - topPadding
 
-                                // Validate if tap is within the chart drawing area
+                                // Ensure tap is within the horizontal bounds of the chart content
                                 if (offset.x in startAxisWidth..(chartWidth - endPadding) && 
                                     clickY in 0f..availableHeight) {
                                     
-                                    // Use rounding to find the nearest column index
-                                    val columnIndex = (clickXWithScroll / totalColumnWidth).roundToInt()
+                                    // Using integer division for more predictable column mapping
+                                    val columnIndex = (absoluteX / totalColumnWidth).toInt()
                                         .coerceIn(0, dataValues.size - 1)
 
                                     val maxValue = dataValues.maxOrNull() ?: 1f
@@ -131,7 +129,7 @@ internal fun TimeColumnChart(
                                     val barHeight = availableHeight * barHeightRatio
                                     val barTop = availableHeight - barHeight
 
-                                    // Trigger callback if the tap falls within the column's vertical range
+                                    // Trigger callback if the tap falls within the column's vertical area
                                     if (clickY in barTop..availableHeight) {
                                         onColumnClick(columnIndex)
                                     }
