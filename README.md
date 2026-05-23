@@ -71,7 +71,7 @@ beautiful experience while helping you build healthier digital habits.
 
 ## Getting Started
 
-Download from [GitHub Releases](https://github.com/PranavPurwar/Reef/releases)
+Download from [GitHub Releases](https://github.com/aload0/Reef/releases)
 or [IzzyOnDroid](https://apt.izzysoft.de/packages/dev.pranav.reef).
 
 On first launch, a guided setup walks you through granting the required permissions.
