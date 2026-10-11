@@ -3,8 +3,11 @@ package dev.pranav.reef
 import android.app.AlarmManager
 import android.app.Application
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.os.UserManager
 import android.util.Log
 import androidx.compose.material3.ColorScheme
@@ -29,6 +32,9 @@ class App : Application(), Configuration.Provider {
     @Volatile
     private var initializedAfterUnlock = false
 
+    @Volatile
+    private var unlockReceiverRegistered = false
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setMinimumLoggingLevel(Log.INFO)
@@ -38,6 +44,14 @@ class App : Application(), Configuration.Provider {
         super.onCreate()
 
         setupCrashHandler()
+
+        val userManager = getSystemService(UserManager::class.java)
+        if (userManager?.isUserUnlocked == false) {
+            Log.i("ReefApp", "Deferring initialization until the user is unlocked")
+            registerUnlockReceiver()
+            return
+        }
+
         initializeAfterUnlock()
     }
 
@@ -47,6 +61,7 @@ class App : Application(), Configuration.Provider {
         val userManager = getSystemService(UserManager::class.java)
         if (!userManager.isUserUnlocked) {
             Log.i("ReefApp", "Deferring initialization until the user is unlocked")
+            registerUnlockReceiver()
             return false
         }
 
@@ -78,10 +93,47 @@ class App : Application(), Configuration.Provider {
 
     private fun setupSafePreferences() {
         val deviceContext = createDeviceProtectedStorageContext()
+        val userManager = getSystemService(UserManager::class.java)
 
-        deviceContext.moveSharedPreferencesFrom(this, "prefs")
+        if (userManager?.isUserUnlocked == true) {
+            try {
+                deviceContext.moveSharedPreferencesFrom(this, "prefs")
+            } catch (e: IllegalStateException) {
+                Log.w(
+                    "ReefApp",
+                    "Credential-protected prefs migration failed while unlocked; continuing with device-protected storage",
+                    e
+                )
+            }
+        }
 
         prefs = deviceContext.getSharedPreferences("prefs", MODE_PRIVATE)
+    }
+
+    private fun registerUnlockReceiver() {
+        if (unlockReceiverRegistered) return
+
+        unlockReceiverRegistered = true
+
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == Intent.ACTION_USER_UNLOCKED) {
+                    unregisterReceiver(this)
+                    unlockReceiverRegistered = false
+                    initializeAfterUnlock()
+                }
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(
+                receiver,
+                IntentFilter(Intent.ACTION_USER_UNLOCKED),
+                Context.RECEIVER_NOT_EXPORTED
+            )
+        } else {
+            registerReceiver(receiver, IntentFilter(Intent.ACTION_USER_UNLOCKED))
+        }
     }
 
     private fun setupCrashHandler() {

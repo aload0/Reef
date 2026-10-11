@@ -129,8 +129,14 @@ class BlockerService : AccessibilityService() {
 
     private val redirectUrl = "about:blank"
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        return START_STICKY
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
+        isBound = true
+        lastEventEpochMs = System.currentTimeMillis()
         _connectionState.value = false
         configureService()
         createNotificationChannel()
@@ -173,6 +179,7 @@ class BlockerService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
+        lastEventEpochMs = System.currentTimeMillis()
         if (keyguardManager?.isKeyguardLocked == true) return
 
         val pkg = event.packageName?.toString() ?: return
@@ -504,11 +511,19 @@ class BlockerService : AccessibilityService() {
     override fun onInterrupt() {}
 
     override fun onUnbind(intent: Intent?): Boolean {
+        isBound = false
         cleanupConnection()
-        return super.onUnbind(intent)
+        return true
+    }
+
+    override fun onRebind(intent: Intent?) {
+        super.onRebind(intent)
+        isBound = true
+        lastEventEpochMs = System.currentTimeMillis()
     }
 
     override fun onDestroy() {
+        isBound = false
         cleanupConnection()
         super.onDestroy()
     }
@@ -535,10 +550,16 @@ class BlockerService : AccessibilityService() {
         private const val ROUTINE_POLL_INTERVAL_MS = 30_000L
         private const val APP_CHECK_DEBOUNCE_MS = 500L
 
+        @Volatile
+        var isBound: Boolean = false
+
+        @Volatile
+        var lastEventEpochMs: Long = 0L
+
         private val _connectionState = MutableStateFlow(false)
         val connectionState: StateFlow<Boolean> = _connectionState.asStateFlow()
 
         val isConnected: Boolean
-            get() = _connectionState.value
+            get() = _connectionState.value && isBound
     }
 }

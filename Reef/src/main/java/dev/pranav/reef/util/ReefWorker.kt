@@ -25,7 +25,7 @@ class ReefWorker(context: Context, params: WorkerParameters): Worker(context, pa
         val prefs = safeContext.getSharedPreferences("prefs", Context.MODE_PRIVATE)
         val isFocusModeActive = prefs.getBoolean("focus_mode", false)
 
-        if (!safeContext.isAccessibilityServiceEnabledForBlocker()) {
+        if (!ServiceHealthChecker.isAccessibilitySettingEnabled(safeContext)) {
             sendInstantNotification(
                 safeContext,
                 channelId = "reef_alerts",
@@ -37,7 +37,7 @@ class ReefWorker(context: Context, params: WorkerParameters): Worker(context, pa
             return Result.success()
         }
 
-        if (!BlockerService.isConnected) {
+        if (ServiceHealthChecker.isServiceDesynced(safeContext)) {
             if (runAttemptCount == 0) {
                 return Result.retry()
             }
