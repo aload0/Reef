@@ -4,31 +4,23 @@ package dev.pranav.reef.util
 // but Gemini activity shows as Google umbrella app. Gemini can
 // be instead intercepted through activity filter isGeminiAssistantActivity 
 object MindfulLaunchTargetEvaluator {
-    private const val GOOGLE_APP_PACKAGE = "com.google.android.googlequicksearchbox"
-    private const val BARD_PACKAGE = "com.google.android.apps.bard"
-    private const val GOOGLE_ASSISTANT_ACTIVITY_PREFIX = "com.google.android.apps.search.assistant"
-
-    fun isExtraMindfulAppService(
-        packageName: String?,
-        className: String?
-    ): Boolean {
-        val app = packageName ?: return false
-
-        if (app == GOOGLE_APP_PACKAGE) {
-            return isGeminiAssistantActivity(className)
-        }
-
-        if (app == BARD_PACKAGE) {
-            return true
-        }
-
-        return false
-    }
+    const val BARD_PACKAGE = "com.google.android.apps.bard"
+    const val GOOGLE_APP_PACKAGE = "com.google.android.googlequicksearchbox"
+    private const val GEMINI_ACTIVITY_KEYWORD = "robin.main.MainActivity"
 
     fun isGeminiAssistantActivity(className: String?): Boolean {
-        val activity = className.orEmpty()
-        return activity.startsWith(GOOGLE_ASSISTANT_ACTIVITY_PREFIX, ignoreCase = true) ||
-            activity.contains("search.assistant", ignoreCase = true) ||
-            activity.contains("robin", ignoreCase = true)
+        return className.orEmpty().contains(GEMINI_ACTIVITY_KEYWORD, ignoreCase = true)
+    }
+
+    /**
+     * Maps any internal Gemini window (Google App + Robin)
+     * to the public Gemini identifier (BARD_PACKAGE).
+     */
+    fun getTargetPackage(packageName: String, className: String?): String {
+        return if (packageName == GOOGLE_APP_PACKAGE && isGeminiAssistantActivity(className)) {
+            BARD_PACKAGE
+        } else {
+            packageName
+        }
     }
 }

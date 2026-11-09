@@ -421,21 +421,14 @@ class BlockerService : AccessibilityService() {
             return
         }
 
-        if (MindfulLaunchManager.isEnabled() &&
-            (MindfulLaunchManager.isMindfulApp(pkg) ||
-                MindfulLaunchTargetEvaluator.isExtraMindfulAppService(
-                    packageName = pkg,
-                    className = className
-                )
-            )
-        ) {
-            if (!MindfulLaunchManager.isCurrentlyUnlocked(pkg)) {
+        // Resolve Google Search + Robin activity into the configured Gemini package
+        val targetPkg = MindfulLaunchTargetEvaluator.getTargetPackage(pkg, className)
+
+        if (MindfulLaunchManager.isEnabled() && MindfulLaunchManager.isMindfulApp(targetPkg)) {
+            if (!MindfulLaunchManager.isCurrentlyUnlocked(targetPkg)) {
                 enforcedForegroundPackage = pkg
                 val intent = Intent(this, MindfulLaunchActivity::class.java).apply {
-                    putExtra("target_package", pkg)
-                    if (!className.isNullOrBlank()) {
-                        putExtra("target_activity", className)
-                    }
+                    putExtra("target_package", targetPkg)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 }
                 startActivity(intent)
@@ -443,11 +436,11 @@ class BlockerService : AccessibilityService() {
             }
         }
 
-        val blockReason = UsageTracker.checkBlockReason(this, pkg)
+        val blockReason = UsageTracker.checkBlockReason(this, targetPkg)
         if (blockReason != UsageTracker.BlockReason.NONE) {
             enforcedForegroundPackage = pkg
             performGlobalAction(GLOBAL_ACTION_HOME)
-            showBlockedNotification(pkg, blockReason)
+            showBlockedNotification(targetPkg, blockReason)
         }
     }
 
