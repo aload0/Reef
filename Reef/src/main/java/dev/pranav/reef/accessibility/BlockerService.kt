@@ -26,6 +26,7 @@ import dev.pranav.reef.services.routines.RoutineSessionManager
 import dev.pranav.reef.util.BLOCKER_CHANNEL_ID
 import dev.pranav.reef.util.FocusStats
 import dev.pranav.reef.util.MindfulLaunchManager
+import dev.pranav.reef.util.MindfulLaunchTargetEvaluator
 import dev.pranav.reef.util.NotificationHelper
 import dev.pranav.reef.util.NotificationHelper.BLOCKER_GROUP_KEY
 import dev.pranav.reef.util.NotificationHelper.createNotificationChannel
@@ -268,7 +269,7 @@ class BlockerService : AccessibilityService() {
         }
 
         if (shouldCheckApp && shouldHandleAppCheck(pkg)) {
-            handleAppBlockCheck(pkg)
+            handleAppBlockCheck(pkg, event.className?.toString())
         }
     }
 
@@ -407,7 +408,7 @@ class BlockerService : AccessibilityService() {
         }
     }
 
-    private fun handleAppBlockCheck(pkg: String) {
+    private fun handleAppBlockCheck(pkg: String, className: String? = null) {
         if (enforcedForegroundPackage == pkg) return
 
         if (prefs.getBoolean("focus_mode", false)) {
@@ -420,7 +421,14 @@ class BlockerService : AccessibilityService() {
             return
         }
 
-        if (MindfulLaunchManager.isEnabled() && MindfulLaunchManager.isMindfulApp(pkg)) {
+        if (MindfulLaunchManager.isEnabled() &&
+            (MindfulLaunchManager.isMindfulApp(pkg) ||
+                MindfulLaunchTargetEvaluator.isExtraMindfulAppService(
+                    packageName = pkg,
+                    className = className
+                )
+            )
+        ) {
             if (!MindfulLaunchManager.isCurrentlyUnlocked(pkg)) {
                 enforcedForegroundPackage = pkg
                 val intent = Intent(this, MindfulLaunchActivity::class.java).apply {
