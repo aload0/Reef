@@ -26,6 +26,7 @@ import dev.pranav.reef.services.routines.RoutineSessionManager
 import dev.pranav.reef.util.BLOCKER_CHANNEL_ID
 import dev.pranav.reef.util.FocusStats
 import dev.pranav.reef.util.MindfulLaunchManager
+import dev.pranav.reef.util.MindfulLaunchTargetEvaluator
 import dev.pranav.reef.util.NotificationHelper
 import dev.pranav.reef.util.NotificationHelper.BLOCKER_GROUP_KEY
 import dev.pranav.reef.util.NotificationHelper.createNotificationChannel
@@ -268,7 +269,7 @@ class BlockerService : AccessibilityService() {
         }
 
         if (shouldCheckApp && shouldHandleAppCheck(pkg)) {
-            handleAppBlockCheck(pkg)
+            handleAppBlockCheck(pkg, event.className?.toString())
         }
     }
 
@@ -407,7 +408,7 @@ class BlockerService : AccessibilityService() {
         }
     }
 
-    private fun handleAppBlockCheck(pkg: String) {
+    private fun handleAppBlockCheck(pkg: String, className: String? = null) {
         if (enforcedForegroundPackage == pkg) return
 
         if (prefs.getBoolean("focus_mode", false)) {
@@ -420,11 +421,14 @@ class BlockerService : AccessibilityService() {
             return
         }
 
-        if (MindfulLaunchManager.isEnabled() && MindfulLaunchManager.isMindfulApp(pkg)) {
-            if (!MindfulLaunchManager.isCurrentlyUnlocked(pkg)) {
+        // Resolve Google Search + Robin activity into the configured Gemini package
+        val targetPkg = MindfulLaunchTargetEvaluator.getTargetPackage(pkg, className)
+
+        if (MindfulLaunchManager.isEnabled() && MindfulLaunchManager.isMindfulApp(targetPkg)) {
+            if (!MindfulLaunchManager.isCurrentlyUnlocked(targetPkg)) {
                 enforcedForegroundPackage = pkg
                 val intent = Intent(this, MindfulLaunchActivity::class.java).apply {
-                    putExtra("target_package", pkg)
+                    putExtra("target_package", targetPkg)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 }
                 startActivity(intent)
@@ -432,11 +436,11 @@ class BlockerService : AccessibilityService() {
             }
         }
 
-        val blockReason = UsageTracker.checkBlockReason(this, pkg)
+        val blockReason = UsageTracker.checkBlockReason(this, targetPkg)
         if (blockReason != UsageTracker.BlockReason.NONE) {
             enforcedForegroundPackage = pkg
             performGlobalAction(GLOBAL_ACTION_HOME)
-            showBlockedNotification(pkg, blockReason)
+            showBlockedNotification(targetPkg, blockReason)
         }
     }
 

@@ -1,8 +1,10 @@
 package dev.pranav.reef
 
 import android.annotation.SuppressLint
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
@@ -505,6 +507,7 @@ fun MindfulLaunchScreen(
                                 MindfulLaunchManager.unlockApp(targetPackage, selectedMinutes)
                                 val launchIntent =
                                     packageManager.getLaunchIntentForPackage(targetPackage)
+
                                 if (launchIntent != null) {
                                     context.startActivity(launchIntent)
                                 }
