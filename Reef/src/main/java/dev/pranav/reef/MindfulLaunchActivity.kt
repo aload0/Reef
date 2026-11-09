@@ -1,8 +1,10 @@
 package dev.pranav.reef
 
 import android.annotation.SuppressLint
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
@@ -78,6 +80,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.createBitmap
 import dev.pranav.reef.ui.ReefTheme
 import dev.pranav.reef.util.MindfulLaunchManager
+import dev.pranav.reef.util.MindfulLaunchTargetEvaluator
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -88,6 +91,7 @@ class MindfulLaunchActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val targetPackage = intent.getStringExtra("target_package") ?: ""
+        val targetActivity = intent.getStringExtra("target_activity")
         if (targetPackage.isBlank()) {
             finish()
             return
@@ -101,6 +105,7 @@ class MindfulLaunchActivity : ComponentActivity() {
                 ) {
                     MindfulLaunchScreen(
                         targetPackage = targetPackage,
+                        targetActivity = targetActivity,
                         onFinished = { finish() }
                     )
                 }
@@ -119,6 +124,7 @@ enum class LaunchPhase {
 @Composable
 fun MindfulLaunchScreen(
     targetPackage: String,
+    targetActivity: String? = null,
     onFinished: () -> Unit
 ) {
     val context = LocalContext.current
@@ -502,9 +508,15 @@ fun MindfulLaunchScreen(
                     else -> {
                         Button(
                             onClick = {
-                                MindfulLaunchManager.unlockApp(targetPackage, selectedMinutes)
-                                val launchIntent =
-                                    packageManager.getLaunchIntentForPackage(targetPackage)
+                                val unlockPackage = resolveUnlockPackage(targetPackage)
+                                MindfulLaunchManager.unlockApp(unlockPackage, selectedMinutes)
+
+                                val launchIntent = buildLaunchIntent(
+                                    targetPackage = targetPackage,
+                                    targetActivity = targetActivity,
+                                    packageManager = packageManager
+                                )
+
                                 if (launchIntent != null) {
                                     context.startActivity(launchIntent)
                                 }
@@ -535,6 +547,32 @@ fun MindfulLaunchScreen(
             }
         }
     }
+}
+
+private fun resolveUnlockPackage(targetPackage: String): String {
+    return when (targetPackage) {
+        "com.google.android.apps.bard" -> "com.google.android.googlequicksearchbox"
+        "com.google.android.googlequicksearchbox" -> "com.google.android.apps.bard"
+        else -> targetPackage
+    }
+}
+
+private fun buildLaunchIntent(
+    targetPackage: String,
+    targetActivity: String?,
+    packageManager: PackageManager
+): Intent? {
+    // If target app is Google and activity is Gemini, launch Gemini app
+    val launchPackage = if (targetPackage == "com.google.android.googlequicksearchbox" &&
+        MindfulLaunchTargetEvaluator.isGeminiAssistantActivity(targetActivity)
+    ) {
+        "com.google.android.apps.bard"
+    } else {
+        targetPackage
+    }
+
+    return packageManager.getLaunchIntentForPackage(launchPackage)
+        ?: packageManager.getLaunchIntentForPackage(targetPackage)
 }
 
 private fun drawableToBitmap(drawable: Drawable): Bitmap {

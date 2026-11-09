@@ -23,7 +23,7 @@ class MindfulLaunchTargetEvaluatorTest {
     }
 
     @Test
-    fun bardAndOtherAppsStillTriggerNormally() {
+    fun bardIsRecognizedAndOtherAppsStayBlocked() {
         assertTrue(
             MindfulLaunchTargetEvaluator.isExtraMindfulAppService(
                 packageName = "com.google.android.apps.bard",
@@ -31,7 +31,7 @@ class MindfulLaunchTargetEvaluatorTest {
             )
         )
 
-        assertTrue(
+        assertFalse(
             MindfulLaunchTargetEvaluator.isExtraMindfulAppService(
                 packageName = "com.example.app",
                 className = "com.example.app.MainActivity"

@@ -14,10 +14,12 @@ object MindfulLaunchTargetEvaluator {
     ): Boolean {
         val app = packageName ?: return false
 
-        if (!MindfulLaunchManager.isMindfulApp(BARD_PACKAGE)) return false
-
         if (app == GOOGLE_APP_PACKAGE) {
             return isGeminiAssistantActivity(className)
+        }
+
+        if (app == BARD_PACKAGE) {
+            return true
         }
 
         return false
