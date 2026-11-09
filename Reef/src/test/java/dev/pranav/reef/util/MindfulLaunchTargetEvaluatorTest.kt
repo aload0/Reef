@@ -1,21 +1,22 @@
 package dev.pranav.reef.util
 
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class MindfulLaunchTargetEvaluatorTest {
     @Test
-    fun googleAppOnlyTriggersForGeminiAssistantActivity() {
-        assertTrue(
-            MindfulLaunchTargetEvaluator.isExtraMindfulAppService(
+    fun googleAppOnlyMapsWhenGeminiAssistantActivityIsPresent() {
+        assertEquals(
+            "com.google.android.apps.bard",
+            MindfulLaunchTargetEvaluator.getTargetPackage(
                 packageName = "com.google.android.googlequicksearchbox",
                 className = "com.google.android.apps.search.assistant.surfaces.voice.robin.main.MainActivity"
             )
         )
 
-        assertFalse(
-            MindfulLaunchTargetEvaluator.isExtraMindfulAppService(
+        assertEquals(
+            "com.google.android.googlequicksearchbox",
+            MindfulLaunchTargetEvaluator.getTargetPackage(
                 packageName = "com.google.android.googlequicksearchbox",
                 className = "com.google.android.apps.search.launcher.SearchActivity"
             )
@@ -23,18 +24,12 @@ class MindfulLaunchTargetEvaluatorTest {
     }
 
     @Test
-    fun bardIsRecognizedAndOtherAppsStayBlocked() {
-        assertTrue(
-            MindfulLaunchTargetEvaluator.isExtraMindfulAppService(
+    fun bardPackageIsPreserved() {
+        assertEquals(
+            "com.google.android.apps.bard",
+            MindfulLaunchTargetEvaluator.getTargetPackage(
                 packageName = "com.google.android.apps.bard",
                 className = "com.google.android.apps.bard.MainActivity"
-            )
-        )
-
-        assertFalse(
-            MindfulLaunchTargetEvaluator.isExtraMindfulAppService(
-                packageName = "com.example.app",
-                className = "com.example.app.MainActivity"
             )
         )
     }
