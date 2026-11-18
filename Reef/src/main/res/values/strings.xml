@@ -442,6 +442,8 @@
     <string name="mindful_launch_description">Adds friction before opening selected distracting apps and prompts for a time limit.</string>
     <string name="mindful_launch_apps">Selected Apps</string>
     <string name="mindful_launch_apps_description">Apps that require mindfulness countdown</string>
+    <string name="mindful_launch_phone_unlock">Phone Unlock</string>
+    <string name="mindful_launch_phone_unlock_description">Trigger Mindful Launch after you unlock the device</string>
     <string name="mindful_launch_duration">Countdown Duration</string>
     <string name="mindful_launch_warning">Custom Warning Message</string>
     <string name="mindful_launch_warning_hint">e.g., Take a deep breath. Do you really need to open this?</string>

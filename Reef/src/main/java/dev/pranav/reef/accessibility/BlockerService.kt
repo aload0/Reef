@@ -63,9 +63,13 @@ class BlockerService : AccessibilityService() {
                     WebsiteUsageTracker.stopTracking()
                 }
 
-                Intent.ACTION_USER_PRESENT, Intent.ACTION_SCREEN_ON -> {
+                Intent.ACTION_SCREEN_ON -> {
                     // Start tracking again if we are already in a browser with a domain
                     // but we will let onAccessibilityEvent handle the current domain state
+                }
+
+                Intent.ACTION_USER_PRESENT -> {
+                    handler.post { handlePostUnlockForegroundAppCheck() }
                 }
             }
         }
@@ -405,6 +409,19 @@ class BlockerService : AccessibilityService() {
             if (child != null) {
                 child.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             }
+        }
+    }
+
+    private fun handlePostUnlockForegroundAppCheck() {
+        if (!MindfulLaunchManager.isEnabled() || !MindfulLaunchManager.isPhoneUnlockEnabled()) {
+            return
+        }
+
+        val currentForegroundPackage = foregroundPackage ?: return
+        if (currentForegroundPackage == packageName) return
+
+        if (shouldHandleAppCheck(currentForegroundPackage)) {
+            handleAppBlockCheck(currentForegroundPackage)
         }
     }
 

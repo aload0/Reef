@@ -7,6 +7,8 @@ import java.util.Locale
 
 object MindfulLaunchManager {
 
+    private const val PHONE_UNLOCK_KEY = "mindful_launch_phone_unlock"
+
     fun isEnabled(): Boolean {
         return prefs.getBoolean("mindful_launch_enabled", false)
     }
@@ -91,6 +93,16 @@ object MindfulLaunchManager {
 
     fun isMindfulApp(pkg: String): Boolean {
         return getMindfulApps().contains(pkg)
+    }
+
+    fun isPhoneUnlockEnabled(): Boolean {
+        return prefs.getBoolean(PHONE_UNLOCK_KEY, false)
+    }
+
+    fun setPhoneUnlockEnabled(enabled: Boolean) {
+        prefs.edit {
+            putBoolean(PHONE_UNLOCK_KEY, enabled)
+        }
     }
 
     private fun getTodayDateString(): String {
