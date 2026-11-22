@@ -47,9 +47,15 @@ class BlockerService : AccessibilityService() {
     private var keyguardManager: KeyguardManager? = null
     private val notificationManager by lazy { NotificationManagerCompat.from(this) }
     private var screenReceiverRegistered = false
-    private var lastCheckedPackage: String? = null
+    private var lastCheckedTargetPackage: String? = null
     private var lastAppCheckAtMs = 0L
+    private var lastCheckedWasWindowState = false
+
+    // Activity class is tracked because Gemini is only identifiable by Activity.
     private var foregroundPackage: String? = null
+    private var foregroundClassName: String? = null
+    private var foregroundTargetPackage: String? = null
+    // Target we already acted on since it came to the foreground. The target is either "sent Home" or "showed the Mindful Launch prompt". enforcedForegroundPackage is cleared when the foreground package or target changes.
     private var enforcedForegroundPackage: String? = null
 
     private var activeBrowserPackage: String? = null
@@ -188,12 +194,30 @@ class BlockerService : AccessibilityService() {
         if (keyguardManager?.isKeyguardLocked == true) return
 
         val pkg = event.packageName?.toString() ?: return
+        val eventClassName = event.className?.toString()
+        val isWindowStateChanged = event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
 
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            if (foregroundPackage != pkg) {
+        // Gemini runs inside the Google app, so its events carry the Google app's package.
+        // Remap and track Gemini activity and package
+        if (isWindowStateChanged) {
+            val nextClassName = MindfulLaunchTargetEvaluator.resolveForegroundClassName(
+                currentPackage = foregroundPackage,
+                newPackage = pkg,
+                currentClassName = foregroundClassName,
+                newClassName = eventClassName
+            )
+            // Resolve target package (e.g. Gemini vs Google Search)
+            val nextTargetPackage =
+                MindfulLaunchTargetEvaluator.getTargetPackage(pkg, nextClassName)
+
+            // Store new package and target on either change.
+            // enforcedForegroundPackage is cleared on both changes, so going from Google Search to Gemini triggers the reset for enforcedForegroundPackage. This lets handleAppBlockCheck run on that app switch.
+            if (foregroundPackage != pkg || foregroundTargetPackage != nextTargetPackage) {
                 foregroundPackage = pkg
+                foregroundTargetPackage = nextTargetPackage
                 enforcedForegroundPackage = null
             }
+            foregroundClassName = nextClassName
 
             if (!browserPackages.contains(pkg)) {
                 WebsiteUsageTracker.stopTracking()
@@ -272,18 +296,36 @@ class BlockerService : AccessibilityService() {
             else -> false
         }
 
-        if (shouldCheckApp && shouldHandleAppCheck(pkg)) {
-            handleAppBlockCheck(pkg, event.className?.toString())
+        // Make sure that the current activity (effectively foregroundClassName) is from the foreground package before passing pkg and activity to getTargetPackage for Gemini mapping
+        val effectiveClassName = when {
+            pkg == foregroundPackage -> foregroundClassName
+            else -> null
+        }
+        val targetPkg = MindfulLaunchTargetEvaluator.getTargetPackage(pkg, effectiveClassName)
+
+        if (shouldCheckApp && shouldHandleAppCheck(targetPkg, isWindowStateChanged)) {
+            handleAppBlockCheck(pkg, effectiveClassName)
         }
     }
 
-    private fun shouldHandleAppCheck(pkg: String): Boolean {
+    private fun shouldHandleAppCheck(
+        targetPkg: String,
+        isWindowStateChanged: Boolean
+    ): Boolean {
         val now = SystemClock.elapsedRealtime()
-        val isDuplicate =
-            pkg == lastCheckedPackage && now - lastAppCheckAtMs < APP_CHECK_DEBOUNCE_MS
+        val isDuplicate = MindfulLaunchTargetEvaluator.shouldDebounceAppCheck(
+            lastCheckedTargetPackage = lastCheckedTargetPackage,
+            lastCheckedAtMs = lastAppCheckAtMs,
+            lastCheckedWasWindowState = lastCheckedWasWindowState,
+            targetPackage = targetPkg,
+            nowMs = now,
+            isWindowStateChanged = isWindowStateChanged,
+            debounceMs = APP_CHECK_DEBOUNCE_MS
+        )
         if (!isDuplicate) {
-            lastCheckedPackage = pkg
+            lastCheckedTargetPackage = targetPkg
             lastAppCheckAtMs = now
+            lastCheckedWasWindowState = isWindowStateChanged
         }
         return !isDuplicate
     }
@@ -412,6 +454,7 @@ class BlockerService : AccessibilityService() {
         }
     }
 
+    /** On unlock, run the app check (usage block or Mindful Launch prompt) on the foreground app. Needs Mindful Launch and Phone Unlock on. */
     private fun handlePostUnlockForegroundAppCheck() {
         if (!MindfulLaunchManager.isEnabled() || !MindfulLaunchManager.isPhoneUnlockEnabled()) {
             return
@@ -420,30 +463,37 @@ class BlockerService : AccessibilityService() {
         val currentForegroundPackage = foregroundPackage ?: return
         if (currentForegroundPackage == packageName) return
 
-        if (shouldHandleAppCheck(currentForegroundPackage)) {
-            handleAppBlockCheck(currentForegroundPackage)
+        val currentClassName = foregroundClassName
+        val targetPkg = MindfulLaunchTargetEvaluator.getTargetPackage(
+            currentForegroundPackage,
+            currentClassName
+        )
+
+        // Ignore cases when the app changes while the phone is locked - they do not seem important for handleAppBlockCheck.
+        if (shouldHandleAppCheck(targetPkg, isWindowStateChanged = false)) {
+            handleAppBlockCheck(currentForegroundPackage, currentClassName)
         }
     }
 
     private fun handleAppBlockCheck(pkg: String, className: String? = null) {
-        if (enforcedForegroundPackage == pkg) return
+        // Compare the target instead of the package so blocking Gemini doesn't suppress Google Search.
+        val targetPkg = MindfulLaunchTargetEvaluator.getTargetPackage(pkg, className)
+        // Already blocked/prompted this target     since it came to the foreground; ignore     repeat events.
+        if (enforcedForegroundPackage == targetPkg) return
 
         if (prefs.getBoolean("focus_mode", false)) {
             if (Whitelist.isWhitelisted(pkg)) return
 
             FocusStats.recordBlockEvent(pkg, "focus_mode")
-            enforcedForegroundPackage = pkg
+            enforcedForegroundPackage = targetPkg
             performGlobalAction(GLOBAL_ACTION_HOME)
             showFocusModeNotification(pkg)
             return
         }
 
-        // Resolve Google Search + Robin activity into the configured Gemini package
-        val targetPkg = MindfulLaunchTargetEvaluator.getTargetPackage(pkg, className)
-
         if (MindfulLaunchManager.isEnabled() && MindfulLaunchManager.isMindfulApp(targetPkg)) {
             if (!MindfulLaunchManager.isCurrentlyUnlocked(targetPkg)) {
-                enforcedForegroundPackage = pkg
+                enforcedForegroundPackage = targetPkg
                 val intent = Intent(this, MindfulLaunchActivity::class.java).apply {
                     putExtra("target_package", targetPkg)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -455,7 +505,7 @@ class BlockerService : AccessibilityService() {
 
         val blockReason = UsageTracker.checkBlockReason(this, targetPkg)
         if (blockReason != UsageTracker.BlockReason.NONE) {
-            enforcedForegroundPackage = pkg
+            enforcedForegroundPackage = targetPkg
             performGlobalAction(GLOBAL_ACTION_HOME)
             showBlockedNotification(targetPkg, blockReason)
         }
@@ -560,7 +610,11 @@ class BlockerService : AccessibilityService() {
         }
         handler.removeCallbacks(websiteLimitPollRunnable)
         handler.removeCallbacks(routinePollRunnable)
+        lastCheckedTargetPackage = null
+        lastCheckedWasWindowState = false
         foregroundPackage = null
+        foregroundClassName = null
+        foregroundTargetPackage = null
         enforcedForegroundPackage = null
         activeBrowserPackage = null
         activeBrowserConfig = null
