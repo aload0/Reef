@@ -7,6 +7,7 @@ import java.util.Locale
 
 object MindfulLaunchManager {
 
+    const val PHONE_UNLOCK_PACKAGE = "dev.pranav.reef.phone_unlock"
     private const val PHONE_UNLOCK_KEY = "mindful_launch_phone_unlock"
 
     fun isEnabled(): Boolean {
@@ -136,6 +137,13 @@ object MindfulLaunchManager {
         val unlockedUntil = System.currentTimeMillis() + durationMinutes * 60 * 1000L
         prefs.edit {
             putLong("mindful_launch_unlocked_until_$pkg", unlockedUntil)
+            if (pkg != PHONE_UNLOCK_PACKAGE) {
+                val phoneUnlockKey = "mindful_launch_unlocked_until_$PHONE_UNLOCK_PACKAGE"
+                val existingPhoneUnlockUntil = prefs.getLong(phoneUnlockKey, 0L)
+                if (unlockedUntil > existingPhoneUnlockUntil) {
+                    putLong(phoneUnlockKey, unlockedUntil)
+                }
+            }
         }
         incrementDailyLaunchCount(pkg)
     }

@@ -39,6 +39,7 @@ import dev.pranav.reef.util.prefs
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.lang.ref.WeakReference
 
 @SuppressLint("AccessibilityPolicy")
 class BlockerService : AccessibilityService() {
@@ -146,6 +147,7 @@ class BlockerService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        instanceRef = WeakReference(this)
         isBound = true
         lastEventEpochMs = System.currentTimeMillis()
         _connectionState.value = false
@@ -194,6 +196,7 @@ class BlockerService : AccessibilityService() {
         if (keyguardManager?.isKeyguardLocked == true) return
 
         val pkg = event.packageName?.toString() ?: return
+        if (pkg == MindfulLaunchTargetEvaluator.SYSTEM_UI_PACKAGE) return
         val eventClassName = event.className?.toString()
         val isWindowStateChanged = event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
 
@@ -454,24 +457,38 @@ class BlockerService : AccessibilityService() {
         }
     }
 
-    /** On unlock, run the app check (usage block or Mindful Launch prompt) on the foreground app. Needs Mindful Launch and Phone Unlock on. */
+    /** On unlock, prompt for an expired foreground Mindful app, or show the Phone Unlock prompt. */
     private fun handlePostUnlockForegroundAppCheck() {
-        if (!MindfulLaunchManager.isEnabled() || !MindfulLaunchManager.isPhoneUnlockEnabled()) {
-            return
-        }
-
-        val currentForegroundPackage = foregroundPackage ?: return
-        if (currentForegroundPackage == packageName) return
-
-        val currentClassName = foregroundClassName
-        val targetPkg = MindfulLaunchTargetEvaluator.getTargetPackage(
-            currentForegroundPackage,
-            currentClassName
+        val action = MindfulLaunchTargetEvaluator.resolvePostUnlockAction(
+            isMindfulLaunchEnabled = MindfulLaunchManager.isEnabled(),
+            isPhoneUnlockEnabled = MindfulLaunchManager.isPhoneUnlockEnabled(),
+            isPromptAlreadyActive = MindfulLaunchActivity.isActive,
+            foregroundPackage = foregroundPackage,
+            foregroundClassName = foregroundClassName,
+            activeWindowPackage = rootInActiveWindow?.packageName?.toString(),
+            ownPackageName = packageName,
+            isMindfulApp = MindfulLaunchManager::isMindfulApp,
+            isAppUnlocked = MindfulLaunchManager::isCurrentlyUnlocked,
+            isPhoneUnlockUnlocked = MindfulLaunchManager.isCurrentlyUnlocked(
+                MindfulLaunchManager.PHONE_UNLOCK_PACKAGE
+            )
         )
 
-        // Ignore cases when the app changes while the phone is locked - they do not seem important for handleAppBlockCheck.
-        if (shouldHandleAppCheck(targetPkg, isWindowStateChanged = false)) {
-            handleAppBlockCheck(currentForegroundPackage, currentClassName)
+        when (action) {
+            MindfulLaunchTargetEvaluator.PostUnlockAction.None -> return
+            is MindfulLaunchTargetEvaluator.PostUnlockAction.ForegroundAppCheck -> {
+                if (shouldHandleAppCheck(action.targetPackage, isWindowStateChanged = true)) {
+                    handleAppBlockCheck(action.packageName, action.className)
+                }
+            }
+
+            MindfulLaunchTargetEvaluator.PostUnlockAction.PhoneUnlockPrompt -> {
+                val intent = Intent(this, MindfulLaunchActivity::class.java).apply {
+                    putExtra("target_package", MindfulLaunchManager.PHONE_UNLOCK_PACKAGE)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                }
+                startActivity(intent)
+            }
         }
     }
 
@@ -589,6 +606,7 @@ class BlockerService : AccessibilityService() {
 
     override fun onRebind(intent: Intent?) {
         super.onRebind(intent)
+        instanceRef = WeakReference(this)
         isBound = true
         lastEventEpochMs = System.currentTimeMillis()
     }
@@ -600,6 +618,7 @@ class BlockerService : AccessibilityService() {
     }
 
     private fun cleanupConnection() {
+        instanceRef = null
         _connectionState.value = false
         if (screenReceiverRegistered) {
             try {
@@ -626,6 +645,9 @@ class BlockerService : AccessibilityService() {
         private const val APP_CHECK_DEBOUNCE_MS = 500L
 
         @Volatile
+        private var instanceRef: WeakReference<BlockerService>? = null
+
+        @Volatile
         var isBound: Boolean = false
 
         @Volatile
@@ -636,5 +658,14 @@ class BlockerService : AccessibilityService() {
 
         val isConnected: Boolean
             get() = _connectionState.value && isBound
+
+        fun lockScreen(): Boolean {
+            val service = instanceRef?.get() ?: return false
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                service.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+            } else {
+                false
+            }
+        }
     }
 }

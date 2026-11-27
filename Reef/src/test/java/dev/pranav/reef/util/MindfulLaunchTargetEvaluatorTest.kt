@@ -133,4 +133,179 @@ class MindfulLaunchTargetEvaluatorTest {
             )
         )
     }
+
+    @Test
+    fun postUnlockActionHandlesHomeScreenCooldownAndDisabledStates() {
+        val launcher = "com.google.android.apps.nexuslauncher"
+        val reefPkg = "dev.pranav.reef"
+
+        // Disabled feature or active prompt does nothing.
+        assertEquals(
+            MindfulLaunchTargetEvaluator.PostUnlockAction.None,
+            MindfulLaunchTargetEvaluator.resolvePostUnlockAction(
+                isMindfulLaunchEnabled = false,
+                isPhoneUnlockEnabled = true,
+                isPromptAlreadyActive = false,
+                foregroundPackage = launcher,
+                foregroundClassName = null,
+                activeWindowPackage = launcher,
+                ownPackageName = reefPkg,
+                isMindfulApp = { false },
+                isAppUnlocked = { false },
+                isPhoneUnlockUnlocked = false
+            )
+        )
+        assertEquals(
+            MindfulLaunchTargetEvaluator.PostUnlockAction.None,
+            MindfulLaunchTargetEvaluator.resolvePostUnlockAction(
+                isMindfulLaunchEnabled = true,
+                isPhoneUnlockEnabled = true,
+                isPromptAlreadyActive = true,
+                foregroundPackage = launcher,
+                foregroundClassName = null,
+                activeWindowPackage = launcher,
+                ownPackageName = reefPkg,
+                isMindfulApp = { false },
+                isAppUnlocked = { false },
+                isPhoneUnlockUnlocked = false
+            )
+        )
+
+        // Home screen with expired Phone Unlock cooldown shows Phone Unlock prompt.
+        assertEquals(
+            MindfulLaunchTargetEvaluator.PostUnlockAction.PhoneUnlockPrompt,
+            MindfulLaunchTargetEvaluator.resolvePostUnlockAction(
+                isMindfulLaunchEnabled = true,
+                isPhoneUnlockEnabled = true,
+                isPromptAlreadyActive = false,
+                foregroundPackage = launcher,
+                foregroundClassName = null,
+                activeWindowPackage = launcher,
+                ownPackageName = reefPkg,
+                isMindfulApp = { false },
+                isAppUnlocked = { false },
+                isPhoneUnlockUnlocked = false
+            )
+        )
+
+        // Home screen with active Phone Unlock cooldown does nothing.
+        assertEquals(
+            MindfulLaunchTargetEvaluator.PostUnlockAction.None,
+            MindfulLaunchTargetEvaluator.resolvePostUnlockAction(
+                isMindfulLaunchEnabled = true,
+                isPhoneUnlockEnabled = true,
+                isPromptAlreadyActive = false,
+                foregroundPackage = launcher,
+                foregroundClassName = null,
+                activeWindowPackage = launcher,
+                ownPackageName = reefPkg,
+                isMindfulApp = { false },
+                isAppUnlocked = { false },
+                isPhoneUnlockUnlocked = true
+            )
+        )
+    }
+
+    @Test
+    fun postUnlockActionPrioritizesExpiredMindfulAppAndFallsBackFromSystemUi() {
+        val reefPkg = "dev.pranav.reef"
+        val instagram = "com.instagram.android"
+        val robinActivity =
+            "com.google.android.apps.search.assistant.surfaces.voice.robin.main.MainActivity"
+
+        // Expired Mindful app takes priority over Phone Unlock prompt.
+        assertEquals(
+            MindfulLaunchTargetEvaluator.PostUnlockAction.ForegroundAppCheck(
+                packageName = instagram,
+                className = "com.instagram.mainactivity.MainActivity",
+                targetPackage = instagram
+            ),
+            MindfulLaunchTargetEvaluator.resolvePostUnlockAction(
+                isMindfulLaunchEnabled = true,
+                isPhoneUnlockEnabled = true,
+                isPromptAlreadyActive = false,
+                foregroundPackage = instagram,
+                foregroundClassName = "com.instagram.mainactivity.MainActivity",
+                activeWindowPackage = instagram,
+                ownPackageName = reefPkg,
+                isMindfulApp = { it == instagram },
+                isAppUnlocked = { false },
+                isPhoneUnlockUnlocked = false
+            )
+        )
+
+        // Expired Gemini inside Google app resolves to BARD_PACKAGE.
+        assertEquals(
+            MindfulLaunchTargetEvaluator.PostUnlockAction.ForegroundAppCheck(
+                packageName = MindfulLaunchTargetEvaluator.GOOGLE_APP_PACKAGE,
+                className = robinActivity,
+                targetPackage = MindfulLaunchTargetEvaluator.BARD_PACKAGE
+            ),
+            MindfulLaunchTargetEvaluator.resolvePostUnlockAction(
+                isMindfulLaunchEnabled = true,
+                isPhoneUnlockEnabled = true,
+                isPromptAlreadyActive = false,
+                foregroundPackage = MindfulLaunchTargetEvaluator.GOOGLE_APP_PACKAGE,
+                foregroundClassName = robinActivity,
+                activeWindowPackage = MindfulLaunchTargetEvaluator.GOOGLE_APP_PACKAGE,
+                ownPackageName = reefPkg,
+                isMindfulApp = { it == MindfulLaunchTargetEvaluator.BARD_PACKAGE },
+                isAppUnlocked = { false },
+                isPhoneUnlockUnlocked = true
+            )
+        )
+
+        // Unlocked Mindful app does not show app prompt; follows Phone Unlock cooldown.
+        assertEquals(
+            MindfulLaunchTargetEvaluator.PostUnlockAction.None,
+            MindfulLaunchTargetEvaluator.resolvePostUnlockAction(
+                isMindfulLaunchEnabled = true,
+                isPhoneUnlockEnabled = true,
+                isPromptAlreadyActive = false,
+                foregroundPackage = instagram,
+                foregroundClassName = null,
+                activeWindowPackage = instagram,
+                ownPackageName = reefPkg,
+                isMindfulApp = { it == instagram },
+                isAppUnlocked = { true },
+                isPhoneUnlockUnlocked = true
+            )
+        )
+        assertEquals(
+            MindfulLaunchTargetEvaluator.PostUnlockAction.PhoneUnlockPrompt,
+            MindfulLaunchTargetEvaluator.resolvePostUnlockAction(
+                isMindfulLaunchEnabled = true,
+                isPhoneUnlockEnabled = true,
+                isPromptAlreadyActive = false,
+                foregroundPackage = instagram,
+                foregroundClassName = null,
+                activeWindowPackage = instagram,
+                ownPackageName = reefPkg,
+                isMindfulApp = { it == instagram },
+                isAppUnlocked = { true },
+                isPhoneUnlockUnlocked = false
+            )
+        )
+
+        // System UI foreground falls back to activeWindowPackage.
+        assertEquals(
+            MindfulLaunchTargetEvaluator.PostUnlockAction.ForegroundAppCheck(
+                packageName = instagram,
+                className = null,
+                targetPackage = instagram
+            ),
+            MindfulLaunchTargetEvaluator.resolvePostUnlockAction(
+                isMindfulLaunchEnabled = true,
+                isPhoneUnlockEnabled = true,
+                isPromptAlreadyActive = false,
+                foregroundPackage = MindfulLaunchTargetEvaluator.SYSTEM_UI_PACKAGE,
+                foregroundClassName = "com.android.systemui.shade.NotificationShadeWindowView",
+                activeWindowPackage = instagram,
+                ownPackageName = reefPkg,
+                isMindfulApp = { it == instagram },
+                isAppUnlocked = { false },
+                isPhoneUnlockUnlocked = false
+            )
+        )
+    }
 }

@@ -4,6 +4,17 @@ package dev.pranav.reef.util
 object MindfulLaunchTargetEvaluator {
     const val BARD_PACKAGE = "com.google.android.apps.bard"
     const val GOOGLE_APP_PACKAGE = "com.google.android.googlequicksearchbox"
+    const val SYSTEM_UI_PACKAGE = "com.android.systemui"
+
+    sealed interface PostUnlockAction {
+        data object None : PostUnlockAction
+        data class ForegroundAppCheck(
+            val packageName: String,
+            val className: String?,
+            val targetPackage: String
+        ) : PostUnlockAction
+        data object PhoneUnlockPrompt : PostUnlockAction
+    }
 
     // "robin" = Gemini's main activity as full-screen or as an overlay on top of another app; "apps.bard" = entry-point activity.
     private val GEMINI_ACTIVITY_HINTS = listOf(
@@ -85,5 +96,51 @@ object MindfulLaunchTargetEvaluator {
             targetPackage == lastCheckedTargetPackage && nowMs - lastCheckedAtMs < debounceMs
         if (!withinWindow) return false
         return !(isWindowStateChanged && !lastCheckedWasWindowState)
+    }
+
+    /**
+     * Decides what Mindful Launch action to take after unlocking the phone:
+     * prioritizes an expired foreground Mindful app, otherwise falls back to the Phone Unlock prompt.
+     */
+    fun resolvePostUnlockAction(
+        isMindfulLaunchEnabled: Boolean,
+        isPhoneUnlockEnabled: Boolean,
+        isPromptAlreadyActive: Boolean,
+        foregroundPackage: String?,
+        foregroundClassName: String?,
+        activeWindowPackage: String?,
+        ownPackageName: String,
+        isMindfulApp: (String) -> Boolean,
+        isAppUnlocked: (String) -> Boolean,
+        isPhoneUnlockUnlocked: Boolean
+    ): PostUnlockAction {
+        if (!isMindfulLaunchEnabled || !isPhoneUnlockEnabled || isPromptAlreadyActive) {
+            return PostUnlockAction.None
+        }
+
+        val candidatePackage = foregroundPackage?.takeUnless { it == SYSTEM_UI_PACKAGE }
+            ?: activeWindowPackage?.takeUnless { it == SYSTEM_UI_PACKAGE }
+
+        if (candidatePackage != null && candidatePackage != ownPackageName) {
+            val candidateClassName = if (candidatePackage == foregroundPackage) {
+                foregroundClassName
+            } else {
+                null
+            }
+            val targetPackage = getTargetPackage(candidatePackage, candidateClassName)
+            if (isMindfulApp(targetPackage) && !isAppUnlocked(targetPackage)) {
+                return PostUnlockAction.ForegroundAppCheck(
+                    packageName = candidatePackage,
+                    className = candidateClassName,
+                    targetPackage = targetPackage
+                )
+            }
+        }
+
+        return if (isPhoneUnlockUnlocked) {
+            PostUnlockAction.None
+        } else {
+            PostUnlockAction.PhoneUnlockPrompt
+        }
     }
 }
