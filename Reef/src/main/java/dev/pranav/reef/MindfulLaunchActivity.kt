@@ -44,6 +44,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.HourglassEmpty
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -78,6 +79,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.createBitmap
+import dev.pranav.reef.accessibility.BlockerService
 import dev.pranav.reef.ui.ReefTheme
 import dev.pranav.reef.util.MindfulLaunchManager
 import kotlinx.coroutines.delay
@@ -103,11 +105,34 @@ class MindfulLaunchActivity : ComponentActivity() {
                 ) {
                     MindfulLaunchScreen(
                         targetPackage = targetPackage,
-                        onFinished = { finish() }
+                        onFinished = {
+                            isActive = false
+                            finish()
+                        }
                     )
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        isActive = true
+    }
+
+    override fun onStop() {
+        isActive = false
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        isActive = false
+        super.onDestroy()
+    }
+
+    companion object {
+        @Volatile
+        var isActive: Boolean = false
     }
 }
 
@@ -125,25 +150,38 @@ fun MindfulLaunchScreen(
 ) {
     val context = LocalContext.current
     val packageManager = context.packageManager
+    val isPhoneUnlock = targetPackage == MindfulLaunchManager.PHONE_UNLOCK_PACKAGE
 
-    val appInfo = remember(targetPackage) {
-        try {
-            packageManager.getApplicationInfo(targetPackage, 0)
-        } catch (_: Exception) {
+    val appInfo = remember(targetPackage, isPhoneUnlock) {
+        if (isPhoneUnlock) {
             null
+        } else {
+            try {
+                packageManager.getApplicationInfo(targetPackage, 0)
+            } catch (_: Exception) {
+                null
+            }
         }
     }
-    val appLabel = remember(appInfo) {
-        appInfo?.loadLabel(packageManager)?.toString() ?: targetPackage
+    val appLabel = remember(appInfo, isPhoneUnlock) {
+        if (isPhoneUnlock) {
+            "Phone Unlock"
+        } else {
+            appInfo?.loadLabel(packageManager)?.toString() ?: targetPackage
+        }
     }
     val appIconBitmap = remember(appInfo) {
         appInfo?.loadIcon(packageManager)?.let { drawableToBitmap(it) }
     }
 
-    val warningMessage = remember(targetPackage) {
+    val warningMessage = remember(targetPackage, isPhoneUnlock) {
         val msg = MindfulLaunchManager.getWarningMessage(targetPackage)
         msg.ifBlank {
-            "Take a deep breath.\nDo you really need to open this app right now?"
+            if (isPhoneUnlock) {
+                "Take a deep breath.\nDo you really need to use your phone right now?"
+            } else {
+                "Take a deep breath.\nDo you really need to open this app right now?"
+            }
         }
     }
     val totalCountdownSeconds = remember(targetPackage) {
@@ -152,7 +190,7 @@ fun MindfulLaunchScreen(
 
     var phase by remember {
         mutableStateOf(
-            if (MindfulLaunchManager.isLaunchLimitReached(targetPackage)) {
+            if (!isPhoneUnlock && MindfulLaunchManager.isLaunchLimitReached(targetPackage)) {
                 LaunchPhase.LIMIT_REACHED
             } else {
                 LaunchPhase.COUNTDOWN
@@ -174,8 +212,19 @@ fun MindfulLaunchScreen(
         onFinished()
     }
 
+    val dismissPrompt = {
+        if (isPhoneUnlock) {
+            onFinished()
+            if (!BlockerService.lockScreen()) {
+                sendHome()
+            }
+        } else {
+            sendHome()
+        }
+    }
+
     BackHandler {
-        sendHome()
+        dismissPrompt()
     }
 
     if (phase == LaunchPhase.COUNTDOWN) {
@@ -231,7 +280,14 @@ fun MindfulLaunchScreen(
                     modifier = Modifier
                         .size(80.dp)
                 ) {
-                    if (appIconBitmap != null) {
+                    if (isPhoneUnlock) {
+                        Icon(
+                            imageVector = Icons.Rounded.PhoneAndroid,
+                            contentDescription = appLabel,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    } else if (appIconBitmap != null) {
                         Image(
                             bitmap = appIconBitmap.asImageBitmap(),
                             contentDescription = appLabel,
@@ -257,7 +313,13 @@ fun MindfulLaunchScreen(
                 Spacer(modifier = Modifier.height(4.dp))
                 val launches = MindfulLaunchManager.getDailyLaunchCount(targetPackage)
                 val limit = MindfulLaunchManager.getLimitCount(targetPackage)
-                if (MindfulLaunchManager.isLimitEnabled(targetPackage)) {
+                if (isPhoneUnlock) {
+                    Text(
+                        text = "Unlocks today: $launches",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else if (MindfulLaunchManager.isLimitEnabled(targetPackage)) {
                     Text(
                         text = "Launches today: $launches / $limit",
                         style = MaterialTheme.typography.bodyMedium,
@@ -401,7 +463,11 @@ fun MindfulLaunchScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "How long do you need the app for?",
+                                    text = if (isPhoneUnlock) {
+                                        "How long do you need your phone for?"
+                                    } else {
+                                        "How long do you need the app for?"
+                                    },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center
@@ -488,7 +554,7 @@ fun MindfulLaunchScreen(
 
                     LaunchPhase.COUNTDOWN -> {
                         OutlinedButton(
-                            onClick = { sendHome() },
+                            onClick = { dismissPrompt() },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
@@ -505,11 +571,13 @@ fun MindfulLaunchScreen(
                         Button(
                             onClick = {
                                 MindfulLaunchManager.unlockApp(targetPackage, selectedMinutes)
-                                val launchIntent =
-                                    packageManager.getLaunchIntentForPackage(targetPackage)
+                                if (!isPhoneUnlock) {
+                                    val launchIntent =
+                                        packageManager.getLaunchIntentForPackage(targetPackage)
 
-                                if (launchIntent != null) {
-                                    context.startActivity(launchIntent)
+                                    if (launchIntent != null) {
+                                        context.startActivity(launchIntent)
+                                    }
                                 }
                                 onFinished()
                             },
@@ -519,13 +587,13 @@ fun MindfulLaunchScreen(
                             shapes = ButtonDefaults.shapes()
                         ) {
                             Text(
-                                text = "Unlock & Open",
+                                text = if (isPhoneUnlock) "Unlock Phone" else "Unlock & Open",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         TextButton(
-                            onClick = { sendHome() },
+                            onClick = { dismissPrompt() },
                             shapes = ButtonDefaults.shapes()
                         ) {
                             Text(

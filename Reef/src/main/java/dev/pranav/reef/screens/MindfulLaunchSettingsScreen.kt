@@ -103,6 +103,7 @@ fun MindfulLaunchScreen(
     var warningMessage by remember { mutableStateOf(MindfulLaunchManager.getWarningMessage()) }
     var limitEnabled by remember { mutableStateOf(MindfulLaunchManager.isLimitEnabled()) }
     var limitCount by remember { mutableIntStateOf(MindfulLaunchManager.getLimitCount()) }
+    var phoneUnlockEnabled by remember { mutableStateOf(MindfulLaunchManager.isPhoneUnlockEnabled()) }
     val selectedAppsCount = remember { MindfulLaunchManager.getMindfulApps().size }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -190,7 +191,7 @@ fun MindfulLaunchScreen(
 
                 // Selected Apps Row
                 item {
-                    SettingsCard(index = 0, listSize = 2) {
+                    SettingsCard(index = 0, listSize = 3) {
                         ListItem(
                             modifier = Modifier
                                 .clickable { onNavigateToApps() }
@@ -228,9 +229,44 @@ fun MindfulLaunchScreen(
                     }
                 }
 
+                item {
+                    SettingsCard(index = 1, listSize = 3) {
+                        ListItem(
+                            modifier = Modifier
+                                .clickable {
+                                    phoneUnlockEnabled = !phoneUnlockEnabled
+                                    MindfulLaunchManager.setPhoneUnlockEnabled(phoneUnlockEnabled)
+                                }
+                                .padding(4.dp),
+                            headlineContent = {
+                                Text(
+                                    stringResource(R.string.mindful_launch_phone_unlock),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    stringResource(R.string.mindful_launch_phone_unlock_description),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = phoneUnlockEnabled,
+                                    onCheckedChange = {
+                                        phoneUnlockEnabled = it
+                                        MindfulLaunchManager.setPhoneUnlockEnabled(it)
+                                    }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+                }
+
                 // Countdown Duration Picker
                 item {
-                    SettingsCard(index = 1, listSize = 2) {
+                    SettingsCard(index = 2, listSize = 3) {
                         NumberSettingItem(
                             label = stringResource(R.string.mindful_launch_duration),
                             value = duration,
